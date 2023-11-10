@@ -37,12 +37,15 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-
+var path = Path.Combine(app.Environment.ContentRootPath, "media");
+if (!Directory.Exists(path))
+{
+    Directory.CreateDirectory(path);
+}
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(
-           Path.Combine(builder.Environment.ContentRootPath, "media")),
-    RequestPath = "/static"
+    RequestPath = "/static",
+    FileProvider = new PhysicalFileProvider(path)
 });
 
 app.UseCors("AllowOrigin");
