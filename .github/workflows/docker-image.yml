@@ -1,0 +1,38 @@
+name: DLog WEB API
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: microsoft/variable-substitution@v1 
+      with:
+          files: '**/appsettings.json'
+      env:
+          AppSettings.Secret: ${{ secrets.SECRET }}
+          AppSettings.connectionString: ${{ secrets.CONNECTION_STRING }}
+    - name: docker login
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag mystictide/dlog-server:latest
+    - name: docker push
+      run: |
+        docker push mystictide/dlog-server:latest

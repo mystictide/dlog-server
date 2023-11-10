@@ -74,7 +74,7 @@ namespace dlog.server.Controllers
 
         [HttpPost]
         [Route("cusername")]
-        public async Task<IActionResult> checkExistingUsername([FromBody] string username)
+        public async Task<IActionResult> CheckExistingUsername([FromBody] string username)
         {
             try
             {

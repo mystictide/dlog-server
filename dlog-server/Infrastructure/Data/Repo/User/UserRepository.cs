@@ -18,11 +18,10 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 param.Add("@Email", entity.Email);
                 param.Add("@Username", entity.Username);
                 param.Add("@Password", entity.Password);
-                param.Add("@AuthType", entity.AuthType);
 
                 string query = $@"
-                INSERT INTO users (email, username, password, authType)
-	                VALUES (@Email, @Username, @Password, 1)
+                INSERT INTO users (email, username, password, authtype, isactive)
+	                VALUES (@Email, @Username, @Password, 1, true)
                 RETURNING *;";
 
                 using (var con = GetConnection)
