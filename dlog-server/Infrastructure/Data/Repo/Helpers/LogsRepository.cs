@@ -24,7 +24,7 @@ namespace dlog.server.Infrastructure.Data.Repo.Helpers
             }
         }
 
-        public async static void CreateLog(Exception ex, int UserId = 0)
+        public async Task<bool> CreateLog(Exception ex, int UserId = 0)
         {
             try
             {
@@ -66,6 +66,7 @@ namespace dlog.server.Infrastructure.Data.Repo.Helpers
                     Line = 0
                 });
             }
+            return true;
         }
     }
 }

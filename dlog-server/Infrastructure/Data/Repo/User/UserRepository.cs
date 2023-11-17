@@ -63,7 +63,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }
@@ -146,7 +146,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return false;
             }
         }
@@ -170,7 +170,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }
@@ -194,7 +194,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }
@@ -224,7 +224,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }
@@ -246,7 +246,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return false;
             }
         }
@@ -268,7 +268,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return false;
             }
         }
@@ -294,7 +294,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
 

@@ -80,7 +80,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }
@@ -103,7 +103,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
             }
             catch (Exception ex)
             {
-                LogsRepository.CreateLog(ex);
+                await new LogsRepository().CreateLog(ex);
                 return false;
             }
         }

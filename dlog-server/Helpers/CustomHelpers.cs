@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
+using dlog.server.Infrastructure.Data.Repo.Helpers;
 
 namespace dlog.server.Helpers
 {
@@ -125,6 +126,7 @@ namespace dlog.server.Helpers
             }
             catch (Exception ex)
             {
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }
