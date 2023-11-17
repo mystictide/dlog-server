@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using dlog.server.Infrasructure.Models.Users;
+using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrastructure.Models.Helpers;
 using dlog.server.Infrastructure.Data.Repo.Helpers;
 using dlog.server.Infrastructure.Data.Interface.User;
@@ -23,10 +24,15 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 INSERT INTO users (email, username, password, authtype, isactive)
 	                VALUES (@Email, @Username, @Password, 1, true)
                 RETURNING *;";
+                string usQuery = $@"
+                INSERT INTO usersettings (userid, picture, bio, facebook, instagram, linkedin, twitter, personal)
+	                VALUES (@UserID, null, null, null, null, null, null, null)";
 
                 using (var con = GetConnection)
                 {
                     var res = await con.QueryFirstOrDefaultAsync<Users>(query, param);
+                    param.Add("@UserID", res?.ID);
+                    await con.QueryFirstOrDefaultAsync<Users>(usQuery, param);
                     return res;
                 }
             }
@@ -42,7 +48,6 @@ namespace dlog.server.Infrastructure.Data.Repo.User
         {
             try
             {
-                DynamicParameters param = new DynamicParameters();
                 string WhereClause = $"WHERE (t.email like '%{entity.Email}%');";
 
                 string query = $@"
@@ -52,7 +57,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
 
                 using (var con = GetConnection)
                 {
-                    var res = await con.QueryFirstOrDefaultAsync<Users>(query, param);
+                    var res = await con.QueryFirstOrDefaultAsync<Users>(query);
                     return res;
                 }
             }
@@ -150,10 +155,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
         {
             try
             {
-                DynamicParameters param = new DynamicParameters();
-                param.Add("@ID", ID);
-
-                string WhereClause = $" WHERE t.id = @ID OR (t.username like '%{Username}%')";
+                string WhereClause = $" WHERE t.id = {ID ?? 0}  OR (t.username like '%{Username}%')";
 
                 string query = $@"
                 SELECT *
@@ -162,7 +164,31 @@ namespace dlog.server.Infrastructure.Data.Repo.User
 
                 using (var con = GetConnection)
                 {
-                    var res = await con.QueryFirstOrDefaultAsync<Users>(query, param);
+                    var res = await con.QueryFirstOrDefaultAsync<Users>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogsRepository.CreateLog(ex);
+                return null;
+            }
+        }
+
+        public async Task<UserSettings>? GetUserSettings(int? ID, string? Username)
+        {
+            try
+            {
+                string WhereClause = $" WHERE t.userid = {ID ?? 0} OR t.userid in (select id from users u where u.username = '{Username}')";
+
+                string query = $@"
+                SELECT *
+                FROM usersettings t
+                {WhereClause};";
+
+                using (var con = GetConnection)
+                {
+                    var res = await con.QueryFirstOrDefaultAsync<UserSettings>(query);
                     return res;
                 }
             }
@@ -177,20 +203,23 @@ namespace dlog.server.Infrastructure.Data.Repo.User
         {
             try
             {
-                DynamicParameters param = new DynamicParameters();
-                param.Add("@ID", ID);
-                param.Add("@Email", Email);
-
-                string query = $@"
-                UPDATE users
-                SET email = @Email
-                WHERE id = @ID
-                RETURNING email;";
-
-                using (var connection = GetConnection)
+                var access = await CheckEmail(Email, ID);
+                if (!access)
                 {
-                    var res = await connection.QueryFirstOrDefaultAsync<string>(query, param);
-                    return res;
+                    string query = $@"
+                    UPDATE users
+                    SET email = '{Email}'
+                    WHERE id = {ID}
+                    RETURNING email;";
+                    using (var connection = GetConnection)
+                    {
+                        var res = await connection.QueryFirstOrDefaultAsync<string>(query);
+                        return res;
+                    }
+                }
+                else
+                {
+                    return null;
                 }
             }
             catch (Exception ex)
@@ -204,17 +233,14 @@ namespace dlog.server.Infrastructure.Data.Repo.User
         {
             try
             {
-                DynamicParameters param = new DynamicParameters();
-                param.Add("@ID", UserID);
-
                 string query = $@"
                 UPDATE users
                 SET password = '{newPassword}'
-                WHERE id = @ID;";
+                WHERE id = {UserID};";
 
                 using (var connection = GetConnection)
                 {
-                    var res = await connection.QueryAsync(query, param);
+                    var res = await connection.QueryAsync(query);
                     return true;
                 }
             }
@@ -229,18 +255,14 @@ namespace dlog.server.Infrastructure.Data.Repo.User
         {
             try
             {
-                DynamicParameters param = new DynamicParameters();
-                param.Add("@ID", ID);
-                param.Add("@Username", Username);
-
                 string query = $@"
                 UPDATE users
-                SET username = @Username
-                WHERE id = @ID;";
+                SET username = '{Username}'
+                WHERE id = {ID};";
 
                 using (var connection = GetConnection)
                 {
-                    await connection.QueryFirstOrDefaultAsync<ProcessResult>(query, param);
+                    await connection.QueryFirstOrDefaultAsync<ProcessResult>(query);
                     return true;
                 }
             }
@@ -249,6 +271,33 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 LogsRepository.CreateLog(ex);
                 return false;
             }
+        }
+        public async Task<string>? ManageAvatar(string path, int userID)
+        {
+            try
+            {
+                string query = $@"
+                UPDATE usersettings
+                SET picture = '{path}'
+                WHERE userid = {userID}
+                RETURNING picture;";
+
+                using (var con = GetConnection)
+                {
+                    var res = await con.QueryFirstOrDefaultAsync<string>(query);
+                    if (res != null)
+                    {
+                        return path;
+                    };
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogsRepository.CreateLog(ex);
+                return null;
+            }
+
         }
     }
 }

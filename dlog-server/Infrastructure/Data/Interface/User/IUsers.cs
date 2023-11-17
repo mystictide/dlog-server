@@ -1,4 +1,5 @@
 ﻿using dlog.server.Infrasructure.Models.Users;
+using dlog_server.Infrastructure.Models.Users;
 
 namespace dlog.server.Infrastructure.Data.Interface.User
 {
@@ -9,8 +10,10 @@ namespace dlog.server.Infrastructure.Data.Interface.User
         Task<Users>? Login(Users entity);
         Task<Users>? Register(Users entity);
         Task<Users>? Get(int? ID, string? Username);
+        Task<UserSettings>? GetUserSettings(int? ID, string? Username);
         Task<bool>? ChangePassword(int UserID, string currentPassword, string newPassword);
         Task<string>? UpdateEmail(int ID, string Email);
+        Task<string>? ManageAvatar(string path, int userID);
         Task<bool>? DeactivateAccount(int ID);
     }
 }

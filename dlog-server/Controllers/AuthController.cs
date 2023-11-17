@@ -10,6 +10,8 @@ namespace dlog.server.Controllers
     [Route("auth")]
     public class AuthController : ControllerBase
     {
+        private static int AuthorizedAuthType = 1;
+
         [HttpPost]
         [Route("register")]
         public async Task<IActionResult> Register([FromBody] Users user)
@@ -25,7 +27,7 @@ namespace dlog.server.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(401, ex.Message);
             }
         }
 
@@ -40,11 +42,12 @@ namespace dlog.server.Controllers
                 userData.Username = data.Username;
                 userData.Email = data.Email;
                 userData.Token = data.Token;
+                userData.Settings = await new UserManager().GetUserSettings(data.ID, null);
                 return Ok(userData);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(401, ex.Message);
             }
         }
 
@@ -68,7 +71,7 @@ namespace dlog.server.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(401, ex.Message);
             }
         }
 
@@ -93,7 +96,7 @@ namespace dlog.server.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(401, ex.Message);
             }
         }
     }

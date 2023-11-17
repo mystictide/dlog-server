@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrastructure.Data.Repo.User;
 using dlog.server.Infrastructure.Models.Helpers;
 using dlog.server.Infrastructure.Data.Interface.User;
@@ -90,6 +91,7 @@ namespace dlog.server.Infrastructure.Managers.Users
             if (result != null && BCrypt.Net.BCrypt.Verify(entity.Password, result.Password))
             {
                 var user = new Infrasructure.Models.Users.Users();
+                user.ID = result.ID;
                 user.Username = result.Username;
                 user.Email = result.Email;
                 user.Token = generateToken(result);
@@ -119,6 +121,11 @@ namespace dlog.server.Infrastructure.Managers.Users
             return await _repo.Get(ID, Username);
         }
 
+        public async Task<UserSettings>? GetUserSettings(int? ID, string? Username)
+        {
+            return await _repo.GetUserSettings(ID, Username);
+        }
+
         public async Task<string>? UpdateEmail(int ID, string Email)
         {
             return await _repo.UpdateEmail(ID, Email);
@@ -134,6 +141,11 @@ namespace dlog.server.Infrastructure.Managers.Users
                 return await _repo.ChangePassword(UserID, currentPassword, newPassword);
             }
             return false;
+        }
+
+        public async Task<string>? ManageAvatar(string path, int userID)
+        {
+            return await _repo.ManageAvatar(path, userID);
         }
     }
 }
