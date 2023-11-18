@@ -96,36 +96,19 @@ namespace dlog.server.Helpers
                 return false;
             }
         }
+
         public static async Task<string> SaveUserAvatar(int UserID, string envPath, IFormFile file)
         {
             try
             {
-                Bitmap original;
-                using (var memoryStream = new MemoryStream())
-                {
-                    await file.CopyToAsync(memoryStream);
-                    using (var img = Image.FromStream(memoryStream))
-                    {
-                        original = new Bitmap(img);
-                    }
-                }
-                //var original = Base64ToBitmap(file);
-                var small = await ResizeImage(original, 220, 220);
-                var large = await ResizeImage(original, 1000, 1000);
                 var userPath = PathFromUserID(UserID.ToString());
                 var savePath = envPath + "/media/avatars/user" + userPath;
-                if (small != null && large != null)
+                Directory.CreateDirectory(savePath);
+                using (Stream stream = new FileStream(savePath + "ua.jpg", FileMode.Create))
                 {
-                    var writeSmall = await WriteImage(small, savePath, "ua-small.jpg");
-                    var writeLarge = await WriteImage(large, savePath, "ua-large.jpg");
-
-                    if (writeSmall && writeLarge)
-                    {
-                        return userPath;
-                    }
+                    await file.CopyToAsync(stream);
                 }
-
-                return null;
+                return userPath;
             }
             catch (Exception ex)
             {
@@ -133,5 +116,43 @@ namespace dlog.server.Helpers
                 return null;
             }
         }
+
+        //public static async Task<string> SaveUserAvatar(int UserID, string envPath, IFormFile file)
+        //{
+        //    try
+        //    {
+        //        Bitmap original;
+        //        using (var memoryStream = new MemoryStream())
+        //        {
+        //            await file.CopyToAsync(memoryStream);
+        //            using (var img = Image.FromStream(memoryStream))
+        //            {
+        //                original = new Bitmap(img);
+        //            }
+        //        }
+        //        //var original = Base64ToBitmap(file);
+        //        var small = await ResizeImage(original, 220, 220);
+        //        var large = await ResizeImage(original, 1000, 1000);
+        //        var userPath = PathFromUserID(UserID.ToString());
+        //        var savePath = envPath + "/media/avatars/user" + userPath;
+        //        if (small != null && large != null)
+        //        {
+        //            var writeSmall = await WriteImage(small, savePath, "ua-small.jpg");
+        //            var writeLarge = await WriteImage(large, savePath, "ua-large.jpg");
+
+        //            if (writeSmall && writeLarge)
+        //            {
+        //                return userPath;
+        //            }
+        //        }
+
+        //        return null;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await new LogsRepository().CreateLog(ex);
+        //        return null;
+        //    }
+        //}
     }
 }
