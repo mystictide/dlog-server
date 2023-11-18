@@ -6,7 +6,7 @@ namespace dlog.server.Helpers
 {
     public class CustomHelpers
     {
-        public static Bitmap Base64ToBitmap(IFormFile file)
+        public static async Task<Bitmap> Base64ToBitmap(IFormFile file)
         {
             try
             {
@@ -24,8 +24,9 @@ namespace dlog.server.Helpers
                 }
                 return bmpReturn;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }
@@ -66,8 +67,9 @@ namespace dlog.server.Helpers
                 }
                 return resizedImage;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }
@@ -77,7 +79,7 @@ namespace dlog.server.Helpers
             return "/" + string.Join("/", UserID.ToArray()) + "/";
         }
 
-        public static bool WriteImage(Bitmap bitmap, string path, string filename)
+        public static async Task<bool> WriteImage(Bitmap bitmap, string path, string filename)
         {
             try
             {
@@ -88,8 +90,9 @@ namespace dlog.server.Helpers
                 }
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                await new LogsRepository().CreateLog(ex);
                 return false;
             }
         }
@@ -113,8 +116,8 @@ namespace dlog.server.Helpers
                 var savePath = envPath + "/media/avatars/user" + userPath;
                 if (small != null && large != null)
                 {
-                    var writeSmall = WriteImage(small, savePath, "ua-small.jpg");
-                    var writeLarge = WriteImage(large, savePath, "ua-large.jpg");
+                    var writeSmall = await WriteImage(small, savePath, "ua-small.jpg");
+                    var writeLarge = await WriteImage(large, savePath, "ua-large.jpg");
 
                     if (writeSmall && writeLarge)
                     {
