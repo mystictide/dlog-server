@@ -48,7 +48,6 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(path)
 });
 
-AppContext.SetSwitch("System.Drawing.EnableUnixSupport", true);
 app.UseCors("AllowOrigin");
 app.UseRouting();
 app.UseAuthentication();

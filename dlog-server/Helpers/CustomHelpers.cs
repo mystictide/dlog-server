@@ -1,99 +1,78 @@
-﻿using System.Drawing;
-using System.Drawing.Imaging;
+﻿using SkiaSharp;
 using dlog.server.Infrastructure.Data.Repo.Helpers;
 
 namespace dlog.server.Helpers
 {
     public class CustomHelpers
     {
-        public static async Task<Bitmap> Base64ToBitmap(IFormFile file)
-        {
-            try
-            {
-                Bitmap bmpReturn = null;
-                string base64String = "";
-                using (var stream = new StreamReader(file.OpenReadStream()))
-                {
-                    base64String = stream.ReadToEnd();
-                    base64String = base64String.Split(',')[1];
-                }
-                byte[] byteBuffer = Convert.FromBase64String(base64String);
-                using (var ms = new MemoryStream(byteBuffer))
-                {
-                    bmpReturn = (Bitmap)Bitmap.FromStream(ms);
-                }
-                return bmpReturn;
-            }
-            catch (Exception ex)
-            {
-                await new LogsRepository().CreateLog(ex);
-                return null;
-            }
-        }
-        public static async Task<Bitmap> ResizeImage(Bitmap original, int width, int height)
-        {
-            try
-            {
-                Bitmap resizedImage;
-
-                int rectHeight = width;
-                int rectWidth = height;
-
-                if (original.Height == original.Width)
-                {
-                    resizedImage = new Bitmap(original, rectHeight, rectHeight);
-                }
-                else
-                {
-                    float aspect = original.Width / (float)original.Height;
-                    int newWidth, newHeight;
-                    newWidth = (int)(rectWidth * aspect);
-                    newHeight = (int)(newWidth / aspect);
-
-                    if (newWidth > rectWidth || newHeight > rectHeight)
-                    {
-                        if (newWidth > newHeight)
-                        {
-                            newWidth = rectWidth;
-                            newHeight = (int)(newWidth / aspect);
-                        }
-                        else
-                        {
-                            newHeight = rectHeight;
-                            newWidth = (int)(newHeight * aspect);
-                        }
-                    }
-                    resizedImage = new Bitmap(original, newWidth, newHeight);
-                }
-                return resizedImage;
-            }
-            catch (Exception ex)
-            {
-                await new LogsRepository().CreateLog(ex);
-                return null;
-            }
-        }
-
         public static string PathFromUserID(string UserID)
         {
             return "/" + string.Join("/", UserID.ToArray()) + "/";
         }
 
-        public static async Task<bool> WriteImage(Bitmap bitmap, string path, string filename)
+        public static async Task<byte[]> ResizeImage(IFormFile file, int width, int height)
         {
-            try
+            using (var stream = new MemoryStream())
             {
-                Directory.CreateDirectory(path);
-                using (Bitmap bmp = new Bitmap(bitmap))
+                await file.CopyToAsync(stream);
+                using (SKMemoryStream sourceStream = new SKMemoryStream(stream.ToArray()))
                 {
-                    bmp.Save(path + filename, ImageFormat.Jpeg);
+                    using (SKCodec codec = SKCodec.Create(sourceStream))
+                    {
+                        sourceStream.Seek(0);
+                        using (SKImage image = SKImage.FromEncodedData(SKData.Create(sourceStream)))
+                        {
+                            int newHeight = image.Height;
+                            int newWidth = image.Width;
+
+                            if (height > 0 && newHeight > height)
+                            {
+                                double scale = (double)height / newHeight;
+                                newHeight = height;
+                                newWidth = (int)Math.Floor(newWidth * scale);
+                            }
+                            if (width > 0 && newWidth > width)
+                            {
+                                double scale = (double)width / newWidth;
+                                newWidth = width;
+                                newHeight = (int)Math.Floor(newHeight * scale);
+                            }
+
+                            var info = codec.Info.ColorSpace.IsSrgb ? new SKImageInfo(newWidth, newHeight) : new SKImageInfo();
+                            using (SKSurface surface = SKSurface.Create(info))
+                            {
+                                using (SKPaint paint = new SKPaint())
+                                {
+                                    paint.IsAntialias = true;
+                                    paint.FilterQuality = SKFilterQuality.High;
+
+                                    surface.Canvas.Clear(SKColors.White);
+                                    var rect = new SKRect(0, 0, newWidth, newHeight);
+                                    surface.Canvas.DrawImage(image, rect, paint);
+                                    surface.Canvas.Flush();
+
+                                    using (SKImage newImage = surface.Snapshot())
+                                    {
+                                        using (SKData newImageData = newImage.Encode())
+                                        {
+                                            return newImageData.ToArray();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                return true;
             }
-            catch (Exception ex)
+        }
+
+        public static async Task<bool> WriteImage(byte[] file, string savePath, string fileName)
+        {
+            Directory.CreateDirectory(savePath);
+            using (var fs = new FileStream(savePath + fileName, FileMode.Create, FileAccess.Write))
             {
-                await new LogsRepository().CreateLog(ex);
-                return false;
+                await fs.WriteAsync(file);
+                return true;
             }
         }
 
@@ -103,12 +82,26 @@ namespace dlog.server.Helpers
             {
                 var userPath = PathFromUserID(UserID.ToString());
                 var savePath = envPath + "/media/avatars/user" + userPath;
-                Directory.CreateDirectory(savePath);
-                using (Stream stream = new FileStream(savePath + "ua.jpg", FileMode.Create))
+
+                var small = await ResizeImage(file, 220, 220);
+                var large = await ResizeImage(file, 800, 800);
+                if (small != null && large != null)
                 {
-                    await file.CopyToAsync(stream);
+                    var writeSmall = await WriteImage(small, savePath, "ua-small.jpg");
+                    var writeLarge = await WriteImage(large, savePath, "ua-large.jpg");
+                    if (writeSmall && writeLarge)
+                    {
+                        return userPath;
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
-                return userPath;
+                else
+                {
+                    return null;
+                }
             }
             catch (Exception ex)
             {
@@ -116,43 +109,5 @@ namespace dlog.server.Helpers
                 return null;
             }
         }
-
-        //public static async Task<string> SaveUserAvatar(int UserID, string envPath, IFormFile file)
-        //{
-        //    try
-        //    {
-        //        Bitmap original;
-        //        using (var memoryStream = new MemoryStream())
-        //        {
-        //            await file.CopyToAsync(memoryStream);
-        //            using (var img = Image.FromStream(memoryStream))
-        //            {
-        //                original = new Bitmap(img);
-        //            }
-        //        }
-        //        //var original = Base64ToBitmap(file);
-        //        var small = await ResizeImage(original, 220, 220);
-        //        var large = await ResizeImage(original, 1000, 1000);
-        //        var userPath = PathFromUserID(UserID.ToString());
-        //        var savePath = envPath + "/media/avatars/user" + userPath;
-        //        if (small != null && large != null)
-        //        {
-        //            var writeSmall = await WriteImage(small, savePath, "ua-small.jpg");
-        //            var writeLarge = await WriteImage(large, savePath, "ua-large.jpg");
-
-        //            if (writeSmall && writeLarge)
-        //            {
-        //                return userPath;
-        //            }
-        //        }
-
-        //        return null;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        await new LogsRepository().CreateLog(ex);
-        //        return null;
-        //    }
-        //}
     }
 }
