@@ -1,5 +1,5 @@
-﻿using System.Diagnostics;
-using Dapper.Contrib.Extensions;
+﻿using Dapper;
+using System.Diagnostics;
 using dlog.server.Infrasructure.Models.Helpers;
 using dlog.server.Infrastructure.Models.Helpers;
 using dlog.server.Infrastructure.Data.Interface.Helpers;
@@ -12,9 +12,13 @@ namespace dlog.server.Infrastructure.Data.Repo.Helpers
         {
             try
             {
+                string query = $@"
+                SET datestyle = dmy;
+                INSERT INTO logs (userid, message, source, line, createddate)
+	                VALUES ({entity.UserID},'{entity.Message}', '{entity.Source}', {entity.Line}, '{entity.CreatedDate}'::timestamp);";
                 using (var con = GetConnection)
                 {
-                    return await con.InsertAsync(entity);
+                    return await con.ExecuteAsync(query);
                 }
             }
             catch (Exception exception)
