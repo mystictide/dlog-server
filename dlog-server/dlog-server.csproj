@@ -16,7 +16,7 @@
     <PackageReference Include="Npgsql" Version="7.0.6" />
     <PackageReference Include="RestSharp" Version="110.2.0" />
     <PackageReference Include="SkiaSharp" Version="2.88.6" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.6" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.6" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
