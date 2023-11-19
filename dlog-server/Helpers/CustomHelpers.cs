@@ -93,12 +93,12 @@ namespace dlog.server.Helpers
                 var savePath = envPath + "/media/avatars/user" + userPath;
 
                 var small = await ResizeImage(file, 220, 220);
-                var large = await ResizeImage(file, 800, 800);
-                if (small != null && large != null)
+                //var large = await ResizeImage(file, 800, 800);
+                if (small != null)
                 {
                     var writeSmall = await WriteImage(small, savePath, "ua-small.jpg");
-                    var writeLarge = await WriteImage(large, savePath, "ua-large.jpg");
-                    if (writeSmall && writeLarge)
+                    //var writeLarge = await WriteImage(large, savePath, "ua-large.jpg");
+                    if (writeSmall)
                     {
                         return userPath;
                     }
