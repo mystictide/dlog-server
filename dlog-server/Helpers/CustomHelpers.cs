@@ -68,12 +68,21 @@ namespace dlog.server.Helpers
 
         public static async Task<bool> WriteImage(byte[] file, string savePath, string fileName)
         {
-            Directory.CreateDirectory(savePath);
-            using (var fs = new FileStream(savePath + fileName, FileMode.Create, FileAccess.Write))
+            try
             {
-                await fs.WriteAsync(file);
-                return true;
+                Directory.CreateDirectory(savePath);
+                using (var fs = new FileStream(savePath + fileName, FileMode.Create, FileAccess.Write))
+                {
+                    await fs.WriteAsync(file);
+                    return true;
+                }
             }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return false;
+            }
+
         }
 
         public static async Task<string> SaveUserAvatar(int UserID, string envPath, IFormFile file)
@@ -91,7 +100,6 @@ namespace dlog.server.Helpers
                     var writeLarge = await WriteImage(large, savePath, "ua-large.jpg");
                     if (writeSmall && writeLarge)
                     {
-                        System.Diagnostics.Debug.WriteLine("writeSmall" + writeSmall);
                         return userPath;
                     }
                     else
