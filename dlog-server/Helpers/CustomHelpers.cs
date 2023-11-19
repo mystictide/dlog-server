@@ -91,6 +91,7 @@ namespace dlog.server.Helpers
                     var writeLarge = await WriteImage(large, savePath, "ua-large.jpg");
                     if (writeSmall && writeLarge)
                     {
+                        System.Diagnostics.Debug.WriteLine("writeSmall" + writeSmall);
                         return userPath;
                     }
                     else

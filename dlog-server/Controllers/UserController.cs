@@ -1,5 +1,6 @@
 ﻿using dlog.server.Helpers;
 using Microsoft.AspNetCore.Mvc;
+using dlog.server.Infrasructure.Models.Helpers;
 using dlog.server.Infrastructure.Managers.Users;
 
 namespace dlog.server.Controllers
@@ -28,9 +29,11 @@ namespace dlog.server.Controllers
                     if (file.Length > 0)
                     {
                         var path = await CustomHelpers.SaveUserAvatar(AuthHelpers.CurrentUserID(HttpContext), _env.ContentRootPath, file);
+                        System.Diagnostics.Debug.WriteLine("path" + path);
                         if (path != null)
                         {
                             result = await new UserManager().ManageAvatar(path, AuthHelpers.CurrentUserID(HttpContext));
+                            System.Diagnostics.Debug.WriteLine("result" + result);
                         }
                         else
                         {
