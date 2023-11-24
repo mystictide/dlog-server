@@ -11,7 +11,8 @@ namespace dlog_server.Infrastructure.Models.Blog
         public int? CategoryID { get; set; }
         public string? Title { get; set; }
         public string? Body { get; set; }
-        public DateTime? Date { get; set; }
+        public DateOnly? Date { get; set; }
+        public DateOnly? UpdateDate { get; set; }
         public bool? IsActive { get; set; }
     }
 }

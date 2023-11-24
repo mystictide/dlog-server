@@ -55,8 +55,9 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                     return result;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }
@@ -65,7 +66,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
         {
             try
             {
-                string WhereClause = $" WHERE t.id = {ID ?? 0} OR (t.title like '%{Title}%')";
+                string WhereClause = $" WHERE t.id = {ID ?? 0} OR (t.title ilike '%{Title}%')";
 
                 string query = $@"
                 SELECT *
@@ -83,8 +84,30 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 await new LogsRepository().CreateLog(ex);
                 return null;
             }
-        }
+        }   
+        public async Task<IEnumerable<Posts>>? GetRecentPosts()
+        {
+            try
+            {
+                string WhereClause = $" WHERE t.date > current_date - interval '7 days'";
 
+                string query = $@"
+                SELECT *
+                FROM posts t
+                {WhereClause};";
+
+                using (var con = GetConnection)
+                {
+                    var res = await con.QueryAsync<Posts>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
         public async Task<bool>? ToggleVisibility(Posts entity)
         {
             try
@@ -107,7 +130,6 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return false;
             }
         }
-
         public async Task<Posts>? ManagePost(int UserID, Posts entity)
         {
             try
@@ -124,16 +146,18 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 }
 
                 string query = $@"
-                INSERT INTO posts (id, userid, categoryid, title, body, isactive)
+                SET datestyle = dmy;
+                INSERT INTO posts (id, userid, categoryid, title, body, date, isactive)
 	 	                VALUES (
-                {identity}, '{entity.UserID}', '{entity.CategoryID}', '{entity.Title}', '{entity.Body}', '{entity.IsActive}')
+                {identity}, {UserID}, {entity.CategoryID}, '{entity.Title}', '{entity.Body}', CURRENT_DATE, true)
                 ON CONFLICT (id) DO UPDATE 
                 SET title = '
                 {entity.Title}',
                        body = '
                 {entity.Body}',
-                       categoryid = '
-                {entity.CategoryID}'
+                       categoryid = 
+                {entity.CategoryID},
+                        updatedate = CURRENT_DATE
                 RETURNING *;";
 
                 using (var connection = GetConnection)
@@ -142,8 +166,9 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                     return res;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                await new LogsRepository().CreateLog(ex);
                 return null;
             }
         }

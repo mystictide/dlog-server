@@ -23,6 +23,10 @@ namespace dlog_server.Infrastructure.Managers.Blog
         {
             return await _repo.Get(ID, Title);
         }
+        public async Task<IEnumerable<Posts>>? GetRecentPosts()
+        {
+            return await _repo.GetRecentPosts();
+        }
 
         public async Task<bool>? ToggleVisibility(Posts entity)
         {

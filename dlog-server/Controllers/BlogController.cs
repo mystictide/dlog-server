@@ -36,7 +36,7 @@ namespace dlog_server.Controllers
                 if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
                 {
                     var UserID = AuthHelpers.CurrentUserID(HttpContext);
-                    if (UserID == entity.UserID)
+                    if (UserID == entity.UserID || entity.ID == null)
                     {
                         var result = await new BlogManager().ManagePost(UserID, entity);
                         return Ok(result);
@@ -50,7 +50,6 @@ namespace dlog_server.Controllers
                 return StatusCode(401, ex.Message);
             }
         }
-
 
         [HttpPost]
         [Route("toggle/post")]

@@ -1,7 +1,9 @@
+using Dapper;
 using Newtonsoft.Json.Serialization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.FileProviders;
 using dlog.server.Infrastructure.Models.Helpers;
+using dlog_server.Infrastructure.Models.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +49,9 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/static",
     FileProvider = new PhysicalFileProvider(path)
 });
+
+SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
 
 app.UseCors("AllowOrigin");
 app.UseRouting();
