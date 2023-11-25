@@ -1,5 +1,6 @@
 ﻿using dlog_server.Infrastructure.Models.Blog;
 using dlog.server.Infrasructure.Models.Helpers;
+using dlog.server.Infrasructure.Models.Returns;
 using dlog.server.Infrastructure.Models.Helpers;
 using dlog_server.Infrastructure.Data.Repo.Blog;
 using dlog_server.Infrastructure.Data.Interface.Blog;
@@ -23,7 +24,7 @@ namespace dlog_server.Infrastructure.Managers.Blog
         {
             return await _repo.Get(ID, Title);
         }
-        public async Task<IEnumerable<Posts>>? GetRecentPosts()
+        public async Task<IEnumerable<PostReturn>>? GetRecentPosts()
         {
             return await _repo.GetRecentPosts();
         }

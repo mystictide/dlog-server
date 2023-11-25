@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using dlog_server.Infrastructure.Models.Blog;
 using dlog.server.Infrasructure.Models.Helpers;
+using dlog.server.Infrasructure.Models.Returns;
 using dlog.server.Infrastructure.Models.Helpers;
 using dlog.server.Infrastructure.Data.Repo.Helpers;
 using dlog_server.Infrastructure.Data.Interface.Blog;
@@ -85,20 +86,22 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return null;
             }
         }   
-        public async Task<IEnumerable<Posts>>? GetRecentPosts()
+        public async Task<IEnumerable<PostReturn>>? GetRecentPosts()
         {
             try
             {
-                string WhereClause = $" WHERE t.date > current_date - interval '7 days'";
+                string WhereClause = $"WHERE t.date > current_date - interval '7 days'";
 
                 string query = $@"
-                SELECT *
+                SELECT *,
+                (select name from categories c where c.id = t.categoryid) as Category,
+                (select username from users u where u.id = t.userid) as Author
                 FROM posts t
                 {WhereClause};";
 
                 using (var con = GetConnection)
                 {
-                    var res = await con.QueryAsync<Posts>(query);
+                    var res = await con.QueryAsync<PostReturn>(query);
                     return res;
                 }
             }
@@ -149,7 +152,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 SET datestyle = dmy;
                 INSERT INTO posts (id, userid, categoryid, title, body, date, isactive)
 	 	                VALUES (
-                {identity}, {UserID}, {entity.CategoryID}, '{entity.Title}', '{entity.Body}', CURRENT_DATE, true)
+                {identity}, {UserID}, {entity.CategoryID}, '{entity.Title}', '{entity.Body}', current_timestamp, true)
                 ON CONFLICT (id) DO UPDATE 
                 SET title = '
                 {entity.Title}',
@@ -157,7 +160,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 {entity.Body}',
                        categoryid = 
                 {entity.CategoryID},
-                        updatedate = CURRENT_DATE
+                        updatedate = current_timestamp
                 RETURNING *;";
 
                 using (var connection = GetConnection)
