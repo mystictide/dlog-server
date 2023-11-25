@@ -27,6 +27,30 @@ namespace dlog_server.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("manage/post")]
+        public async Task<IActionResult> ManagePost([FromQuery] int? ID, [FromQuery] string? Title)
+        {
+            try
+            {
+                if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
+                {
+                    var result = await new BlogManager().Get(ID, Title);
+                    var UserID = AuthHelpers.CurrentUserID(HttpContext);
+                    if (UserID == result.UserID)
+                    {
+                        return Ok(result);
+                    }
+                    return StatusCode(401, "Access denied");
+                }
+                return StatusCode(401, "Authorization failed");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(401, ex.Message);
+            }
+        }
+
         [HttpPost]
         [Route("manage/post")]
         public async Task<IActionResult> ManagePost([FromBody] Posts entity)
