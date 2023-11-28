@@ -24,6 +24,11 @@ namespace dlog_server.Infrastructure.Managers.Blog
         {
             return await _repo.Get(ID, Title);
         }
+        public async Task<PostReturn>? GetView(int? ID, string? Title)
+        {
+            return await _repo.GetView(ID, Title);
+        }
+
         public async Task<IEnumerable<PostReturn>>? GetRecentPosts()
         {
             return await _repo.GetRecentPosts();

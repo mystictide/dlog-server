@@ -14,10 +14,14 @@ namespace dlog_server.Controllers
 
         [HttpGet]
         [Route("get/post")]
-        public async Task<IActionResult> GetPost([FromQuery] int? ID, [FromQuery] string? Title)
+        public async Task<IActionResult> GetPost([FromQuery] int? ID, [FromQuery] string? Title, [FromQuery] bool View)
         {
             try
             {
+                if (View)
+                {
+                    return Ok(await new BlogManager().GetView(ID, Title));
+                }
                 var result = await new BlogManager().Get(ID, Title);
                 return Ok(result);
             }

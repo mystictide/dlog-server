@@ -3,10 +3,18 @@
     public class PostReturn
     {
         public int? ID { get; set; }
+        private int? UserID { get; set; }
         public string? Title { get; set; }
         public string? Body { get; set; }
         public string? Category { get; set; }
         public string? Author { get; set; }
+        public string? AuthorImage
+        {
+            get
+            {
+                return "https://dapi.herrguller.cc/static/avatars/user/" + UserID + "/ua-small.jpg";
+            }
+        }
         public DateTime Date { get; set; }
         public DateTime? UpdateDate { get; set; }
     }

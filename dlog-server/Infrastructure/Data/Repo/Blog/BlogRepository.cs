@@ -85,7 +85,33 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 await new LogsRepository().CreateLog(ex);
                 return null;
             }
-        }   
+        }
+
+        public async Task<PostReturn>? GetView(int? ID, string? Title)
+        {
+            try
+            {
+                string WhereClause = $" WHERE t.id = {ID ?? 0} OR (t.title ilike '%{Title}%')";
+
+                string query = $@"
+                SELECT *,
+                (select name from categories c where c.id = t.categoryid) as Category,
+                (select username from users u where u.id = t.userid) as Author
+                FROM posts t
+                {WhereClause};";
+
+                using (var con = GetConnection)
+                {
+                    var res = await con.QueryFirstOrDefaultAsync<PostReturn>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
         public async Task<IEnumerable<PostReturn>>? GetRecentPosts()
         {
             try
@@ -97,7 +123,8 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 (select name from categories c where c.id = t.categoryid) as Category,
                 (select username from users u where u.id = t.userid) as Author
                 FROM posts t
-                {WhereClause};";
+                {WhereClause}
+                order by t.date desc limit 5;";
 
                 using (var con = GetConnection)
                 {
