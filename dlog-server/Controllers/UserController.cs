@@ -1,6 +1,6 @@
 ﻿using dlog.server.Helpers;
 using Microsoft.AspNetCore.Mvc;
-using dlog.server.Infrasructure.Models.Helpers;
+using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrastructure.Managers.Users;
 
 namespace dlog.server.Controllers
@@ -85,6 +85,50 @@ namespace dlog.server.Controllers
                     {
                         return StatusCode(401, "Email already in use");
                     }
+                    return Ok(result);
+                }
+                else
+                {
+                    return StatusCode(401, "Authorization failed");
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(401, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        [Route("update/bio")]
+        public async Task<IActionResult> UpdateBio([FromBody] string bio)
+        {
+            try
+            {
+                if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
+                {
+                    var result = await new UserManager().UpdateBio(AuthHelpers.CurrentUserID(HttpContext), bio);
+                    return Ok(result);
+                }
+                else
+                {
+                    return StatusCode(401, "Authorization failed");
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(401, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        [Route("update/socials")]
+        public async Task<IActionResult> UpdateSocials([FromBody] UserSettings entity)
+        {
+            try
+            {
+                if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
+                {
+                    var result = await new UserManager().UpdateSocials(AuthHelpers.CurrentUserID(HttpContext), entity);
                     return Ok(result);
                 }
                 else

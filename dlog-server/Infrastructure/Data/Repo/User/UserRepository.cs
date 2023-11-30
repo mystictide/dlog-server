@@ -25,8 +25,8 @@ namespace dlog.server.Infrastructure.Data.Repo.User
 	                VALUES (@Email, @Username, @Password, 1, true)
                 RETURNING *;";
                 string usQuery = $@"
-                INSERT INTO usersettings (userid, picture, bio, facebook, instagram, linkedin, twitter, personal)
-	                VALUES (@UserID, null, null, null, null, null, null, null)";
+                INSERT INTO usersettings (userid, picture, bio, facebook, instagram, linkedin, twitter, youtube, personal)
+	                VALUES (@UserID, null, null, null, null, null, null, null, null)";
 
                 using (var con = GetConnection)
                 {
@@ -270,6 +270,57 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             {
                 await new LogsRepository().CreateLog(ex);
                 return false;
+            }
+        }
+
+        public async Task<string>? UpdateBio(int ID, string Bio)
+        {
+            try
+            {
+                string query = $@"
+                UPDATE usersettings
+                SET bio = '{Bio}'
+                WHERE userid = {ID}
+                RETURNING bio;";
+
+                using (var connection = GetConnection)
+                {
+                    var res = await connection.QueryFirstOrDefaultAsync<string>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+
+        public async Task<UserSettings>? UpdateSocials(int ID, UserSettings entity)
+        {
+            try
+            {
+                string query = $@"
+                UPDATE usersettings
+                SET facebook = '{entity.Facebook}',
+                instagram = '{entity.Instagram}',
+                linkedin = '{entity.Linkedin}',
+                twitter = '{entity.Twitter}',
+                youtube = '{entity.YouTube}',
+                personal = '{entity.Personal}'
+                WHERE userid = {ID}
+                RETURNING facebook, instagram, linkedin, twitter, youtube, personal;";
+
+                using (var connection = GetConnection)
+                {
+                    var res = await connection.QueryFirstOrDefaultAsync<UserSettings>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
             }
         }
         public async Task<string>? ManageAvatar(string path, int userID)

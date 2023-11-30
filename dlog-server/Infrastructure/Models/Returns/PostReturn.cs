@@ -1,4 +1,6 @@
-﻿namespace dlog.server.Infrasructure.Models.Returns
+﻿using dlog_server.Infrastructure.Models.Users;
+
+namespace dlog.server.Infrasructure.Models.Returns
 {
     public class PostReturn
     {
@@ -8,6 +10,7 @@
         public string? Body { get; set; }
         public string? Category { get; set; }
         public string? Author { get; set; }
+        public UserSettings? AuthorSocials { get; set; }
         public string? AuthorImage
         {
             get

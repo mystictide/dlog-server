@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using dlog_server.Infrastructure.Models.Blog;
+using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrasructure.Models.Helpers;
 using dlog.server.Infrasructure.Models.Returns;
 using dlog.server.Infrastructure.Models.Helpers;
@@ -94,16 +95,23 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 string WhereClause = $" WHERE t.id = {ID ?? 0} OR (t.title ilike '%{Title}%')";
 
                 string query = $@"
-                SELECT *,
-                (select name from categories c where c.id = t.categoryid) as Category,
-                (select username from users u where u.id = t.userid) as Author
+                SELECT t.*, c.id, c.name, u.id, u.username, u2.*
                 FROM posts t
+                left join categories c on c.id = t.categoryid
+                left join users u on u.id = t.userid
+                left join usersettings u2 on u2.userid = t.userid
                 {WhereClause};";
 
                 using (var con = GetConnection)
                 {
-                    var res = await con.QueryFirstOrDefaultAsync<PostReturn>(query);
-                    return res;
+                    var res = await con.QueryAsync<PostReturn, Categories, UserReturn, UserSettings, PostReturn>(query, (post, c, u, us) => {
+                        post.Author = u.Username;
+                        post.Category = c.Name;
+                        post.AuthorSocials = us;
+                        return post;
+                    }, splitOn: "id");
+
+                    return res.FirstOrDefault();
                 }
             }
             catch (Exception ex)

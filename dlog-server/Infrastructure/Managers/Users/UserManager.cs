@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using dlog.server.Infrasructure.Models.Users;
 using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrastructure.Data.Repo.User;
 using dlog.server.Infrastructure.Models.Helpers;
@@ -146,6 +147,16 @@ namespace dlog.server.Infrastructure.Managers.Users
         public async Task<string>? ManageAvatar(string path, int userID)
         {
             return await _repo.ManageAvatar(path, userID);
+        }
+
+        public async Task<string>? UpdateBio(int ID, string Bio)
+        {
+            return await _repo.UpdateBio(ID, Bio);
+        }
+
+        public async Task<UserSettings>? UpdateSocials(int ID, UserSettings entity)
+        {
+            return await _repo.UpdateSocials(ID, entity);
         }
     }
 }

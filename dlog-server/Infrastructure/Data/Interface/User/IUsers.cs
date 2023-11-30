@@ -13,6 +13,8 @@ namespace dlog.server.Infrastructure.Data.Interface.User
         Task<UserSettings>? GetUserSettings(int? ID, string? Username);
         Task<bool>? ChangePassword(int UserID, string currentPassword, string newPassword);
         Task<string>? UpdateEmail(int ID, string Email);
+        Task<string>? UpdateBio(int ID, string Bio);
+        Task<UserSettings>? UpdateSocials(int ID, UserSettings entity);
         Task<string>? ManageAvatar(string path, int userID);
         Task<bool>? DeactivateAccount(int ID);
     }
