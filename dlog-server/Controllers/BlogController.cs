@@ -1,7 +1,6 @@
 ﻿using dlog.server.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using dlog_server.Infrastructure.Models.Blog;
-using dlog.server.Infrasructure.Models.Helpers;
 using dlog_server.Infrastructure.Managers.Blog;
 
 namespace dlog_server.Controllers
@@ -63,8 +62,9 @@ namespace dlog_server.Controllers
             {
                 if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
                 {
+                    var post = await new BlogManager().Get(entity.ID, null);
                     var UserID = AuthHelpers.CurrentUserID(HttpContext);
-                    if (UserID == entity.UserID || entity.ID == null)
+                    if (UserID == post.UserID || entity.ID == null)
                     {
                         var result = await new BlogManager().ManagePost(UserID, entity);
                         return Ok(result);
@@ -86,21 +86,6 @@ namespace dlog_server.Controllers
             try
             {
                 var result = await new BlogManager().ToggleVisibility(entity);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(401, ex.Message);
-            }
-        }
-
-        [HttpPost]
-        [Route("filter/posts")]
-        public async Task<IActionResult> FilterPosts([FromBody] Filter filter)
-        {
-            try
-            {
-                var result = await new BlogManager().FilterPosts(filter);
                 return Ok(result);
             }
             catch (Exception ex)

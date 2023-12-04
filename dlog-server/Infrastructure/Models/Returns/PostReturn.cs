@@ -1,11 +1,13 @@
-﻿using dlog_server.Infrastructure.Models.Users;
+﻿using Newtonsoft.Json;
+using dlog_server.Infrastructure.Models.Users;
 
 namespace dlog.server.Infrasructure.Models.Returns
 {
     public class PostReturn
     {
         public int? ID { get; set; }
-        private int? UserID { get; set; }
+        [JsonProperty(PropertyName = "UID")]
+        public int? UserID { get; set; }
         public string? Title { get; set; }
         public string? Body { get; set; }
         public string? Category { get; set; }
@@ -20,5 +22,6 @@ namespace dlog.server.Infrasructure.Models.Returns
         }
         public DateTime Date { get; set; }
         public DateTime? UpdateDate { get; set; }
+        public bool IsMedia { get; set; }
     }
 }

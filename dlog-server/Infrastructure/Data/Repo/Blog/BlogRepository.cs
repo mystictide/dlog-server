@@ -23,22 +23,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                     filterModel = filterModel,
                 };
                 FilteredList<Posts> result = new FilteredList<Posts>();
-                string WhereClause = "";
-                if (filter.Keyword != null && filter.Keyword != "")
-                {
-                    WhereClause = $@" WHERE t.title ILIKE '%{filter.Keyword}%'";
-                }
-                if (filter.CategoryName != null && filter.CategoryName != "")
-                {
-                    WhereClause = $@" WHERE t.categoryid in (SELECT id from categories where name = '{filter.CategoryName}')
-                    AND t.title ILIKE '%{filter.Keyword}%'";
-                }
-                if (filter.CategoryID > 0)
-                {
-                    WhereClause = $@"WHERE t.categoryid = {filter.CategoryID}
-                    AND t.title ILIKE '%{filter.Keyword}%'";
-                }
-
+                string WhereClause = $@"WHERE t.ismedia = false and t.title ilike '%{filter.Keyword}%' or t.categoryid = {filter.Category} or t.userid in (select id from users u where u.username ilike '{filter.Author}')";
                 string query_count = $@"Select Count(t.id) from posts t {WhereClause}";
 
                 using (var con = GetConnection)
@@ -48,7 +33,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                     string query = $@"
                     SELECT * FROM posts t
                     {WhereClause}
-                    ORDER BY t.id {filter.SortBy}
+                    order by t.updatedate, t.date {filter.SortBy}
                     OFFSET {request.filter.pager.StartIndex} ROWS
                     FETCH NEXT {request.filter.pageSize} ROWS ONLY";
                     result.data = await con.QueryAsync<Posts>(query);
@@ -68,7 +53,15 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
         {
             try
             {
-                string WhereClause = $" WHERE t.id = {ID ?? 0} OR (t.title ilike '%{Title}%')";
+                string WhereClause;
+                if (Title != null)
+                {
+                    WhereClause = $" WHERE t.id = {ID ?? 0} AND (t.title ilike '{Title}')";
+                }
+                else
+                {
+                    WhereClause = $" WHERE t.id = {ID ?? 0}";
+                }
 
                 string query = $@"
                 SELECT *
@@ -92,7 +85,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
         {
             try
             {
-                string WhereClause = $" WHERE t.id = {ID ?? 0} OR (t.title ilike '%{Title}%')";
+                string WhereClause = $" WHERE t.id = {ID ?? 0} AND (t.title ilike '{Title}')";
 
                 string query = $@"
                 SELECT t.*, c.id, c.name, u.id, u.username, u2.*
@@ -104,7 +97,8 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
 
                 using (var con = GetConnection)
                 {
-                    var res = await con.QueryAsync<PostReturn, Categories, UserReturn, UserSettings, PostReturn>(query, (post, c, u, us) => {
+                    var res = await con.QueryAsync<PostReturn, Categories, UserReturn, UserSettings, PostReturn>(query, (post, c, u, us) =>
+                    {
                         post.Author = u.Username;
                         post.Category = c.Name;
                         post.AuthorSocials = us;
@@ -124,7 +118,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
         {
             try
             {
-                string WhereClause = $"WHERE t.date > current_date - interval '7 days'";
+                string WhereClause = $"WHERE ismedia = false AND t.date > current_date - interval '7 days' OR t.updatedate > current_date - interval '7 days'";
 
                 string query = $@"
                 SELECT *,
@@ -132,7 +126,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 (select username from users u where u.id = t.userid) as Author
                 FROM posts t
                 {WhereClause}
-                order by t.date desc limit 5;";
+                order by t.updatedate, t.date desc limit 5;";
 
                 using (var con = GetConnection)
                 {
@@ -185,17 +179,15 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
 
                 string query = $@"
                 SET datestyle = dmy;
-                INSERT INTO posts (id, userid, categoryid, title, body, date, isactive)
+                INSERT INTO posts (id, userid, categoryid, title, body, date, isactive, ismedia)
 	 	                VALUES (
-                {identity}, {UserID}, {entity.CategoryID}, '{entity.Title}', '{entity.Body}', current_timestamp, true)
+                {identity}, {UserID}, {entity.CategoryID}, '{entity.Title}', '{entity.Body}', current_timestamp, true, {entity.IsMedia})
                 ON CONFLICT (id) DO UPDATE 
-                SET title = '
-                {entity.Title}',
-                       body = '
-                {entity.Body}',
-                       categoryid = 
-                {entity.CategoryID},
-                        updatedate = current_timestamp
+                SET title = '{entity.Title}',
+                       body = '{entity.Body}',
+                       categoryid = {entity.CategoryID},
+                       updatedate = current_timestamp,
+                       ismedia = {entity.IsMedia}
                 RETURNING *;";
 
                 using (var connection = GetConnection)

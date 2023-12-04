@@ -20,6 +20,7 @@ namespace dlog.server.Controllers
             {
                 var data = await new UserManager().Register(user);
                 var userData = new UserReturn();
+                userData.UID = data.ID;
                 userData.Username = data.Username;
                 userData.Email = data.Email;
                 userData.Token = data.Token;
@@ -39,6 +40,7 @@ namespace dlog.server.Controllers
             {
                 var data = await new UserManager().Login(user);
                 var userData = new UserReturn();
+                userData.UID = data.ID;
                 userData.Username = data.Username;
                 userData.Email = data.Email;
                 userData.Token = data.Token;

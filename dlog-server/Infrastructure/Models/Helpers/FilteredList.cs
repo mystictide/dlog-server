@@ -16,8 +16,8 @@
         public Filter()
         {
             Keyword = "";
-            CategoryID = 0;
-            CategoryName = "";
+            Category = 0;
+            Author = "";
             pageSize = 10;
             page = 1;
             SortBy = "desc";
@@ -25,10 +25,10 @@
 
         public string? Keyword { get; set; }
 
-        public int CategoryID { get; set; }
-        public string? CategoryName { get; set; }
-
         public string? SortBy { get; set; }
+
+        public int? Category{ get; set; }
+        public string? Author { get; set; }
 
         public int page { get; set; }
 
