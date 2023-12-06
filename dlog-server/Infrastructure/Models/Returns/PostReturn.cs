@@ -17,7 +17,14 @@ namespace dlog.server.Infrasructure.Models.Returns
         {
             get
             {
-                return "https://dapi.herrguller.cc/static/avatars/user/" + UserID + "/ua-small.jpg";
+                if (UserID.HasValue)
+                {
+                    return "https://dapi.herrguller.cc/static/avatars/user/" + UserID + "/ua-small.jpg";
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
         public DateTime Date { get; set; }

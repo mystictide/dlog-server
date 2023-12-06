@@ -10,7 +10,11 @@ namespace dlog_server.Infrastructure.Models.Blog
         public int PostID { get; set; }
         public int UserID { get; set; }
         public string? Body { get; set; }
+        public DateTime? Date { get; set; }
+        public DateTime? UpdateDate { get; set; }
+        [Write(false)]
         public int Upvotes { get; set; }
+        [Write(false)]
         public int Downvotes { get; set; }
     }
 }

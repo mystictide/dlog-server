@@ -21,6 +21,8 @@
             pageSize = 10;
             page = 1;
             SortBy = "desc";
+            IsMedia = false;
+            IsAdvanced = false;
         }
 
         public string? Keyword { get; set; }
@@ -29,6 +31,8 @@
 
         public int? Category{ get; set; }
         public string? Author { get; set; }
+        public bool IsMedia { get; set; }
+        public bool IsAdvanced { get; set; }
 
         public int page { get; set; }
 

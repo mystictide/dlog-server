@@ -11,19 +11,47 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
 {
     public class BlogRepository : AppSettings, IBlog
     {
-        public async Task<FilteredList<Posts>> FilterPosts(Filter filter)
+        public async Task<FilteredList<PostReturn>> FilterPosts(Filter filter)
         {
             try
             {
-                var filterModel = new Posts();
-                filter.pageSize = 16;
-                FilteredList<Posts> request = new FilteredList<Posts>()
+                var filterModel = new PostReturn();
+                FilteredList<PostReturn> request = new FilteredList<PostReturn>()
                 {
                     filter = filter,
                     filterModel = filterModel,
                 };
-                FilteredList<Posts> result = new FilteredList<Posts>();
-                string WhereClause = $@"WHERE t.ismedia = false and t.title ilike '%{filter.Keyword}%' or t.categoryid = {filter.Category} or t.userid in (select id from users u where u.username ilike '{filter.Author}')";
+                FilteredList<PostReturn> result = new FilteredList<PostReturn>();
+                string kw = "''";
+                string cat = "";
+                if (filter.Keyword != null)
+                {
+                    kw = $@"'%{filter.Keyword}%'";
+                }
+                if (filter.Category == 0)
+                {
+                    cat = "notnull ";
+                }
+                else
+                {
+                    cat = $@"= {filter.Category} ";
+                }
+
+                string WhereClause = $@"WHERE t.ismedia = {filter.IsMedia} 
+                and t.title ilike {kw} or t.categoryid {cat}";
+
+                if (filter.IsAdvanced)
+                {
+                    WhereClause = $@"WHERE t.ismedia = {filter.IsMedia} 
+                and t.title ilike {kw}
+                and t.categoryid {cat}";
+                }
+                if (filter.Author != null && filter.IsAdvanced)
+                {
+                    WhereClause = $@"WHERE t.ismedia = {filter.IsMedia} 
+                and t.categoryid {cat} 
+                and t.userid in (select id from users u where u.username ilike '{filter.Author}')";
+                }
                 string query_count = $@"Select Count(t.id) from posts t {WhereClause}";
 
                 using (var con = GetConnection)
@@ -31,12 +59,15 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                     result.totalItems = await con.QueryFirstOrDefaultAsync<int>(query_count);
                     request.filter.pager = new Page(result.totalItems, request.filter.pageSize, request.filter.page);
                     string query = $@"
-                    SELECT * FROM posts t
+                    SELECT *,
+                    (select name from categories c where c.id = t.categoryid) as Category,
+                    (select username from users us where us.id = t.userid) as Author
+                    FROM posts t
                     {WhereClause}
-                    order by t.updatedate, t.date {filter.SortBy}
+                    order by COALESCE(t.updatedate, t.date) {filter.SortBy}
                     OFFSET {request.filter.pager.StartIndex} ROWS
                     FETCH NEXT {request.filter.pageSize} ROWS ONLY";
-                    result.data = await con.QueryAsync<Posts>(query);
+                    result.data = await con.QueryAsync<PostReturn>(query);
                     result.filter = request.filter;
                     result.filterModel = request.filterModel;
                     return result;
@@ -71,6 +102,25 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 using (var con = GetConnection)
                 {
                     var res = await con.QueryFirstOrDefaultAsync<Posts>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+        public async Task<Comments>? GetComment(int ID)
+        {
+            try
+            {
+                string query = $@"
+                SELECT * FROM comments t WHERE t.id = {ID};";
+
+                using (var con = GetConnection)
+                {
+                    var res = await con.QueryFirstOrDefaultAsync<Comments>(query);
                     return res;
                 }
             }
@@ -126,7 +176,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 (select username from users u where u.id = t.userid) as Author
                 FROM posts t
                 {WhereClause}
-                order by t.updatedate, t.date desc limit 5;";
+                order by COALESCE(t.updatedate, t.date) desc limit 5;";
 
                 using (var con = GetConnection)
                 {
@@ -193,6 +243,116 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 using (var connection = GetConnection)
                 {
                     var res = await connection.QueryFirstOrDefaultAsync<Posts>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+
+        public async Task<Comments>? ManageComment(int UserID, Comments entity)
+        {
+            try
+            {
+                dynamic identity = entity.ID.HasValue ? entity.ID.Value : "default";
+
+                if (entity.Body.Contains("'"))
+                {
+                    entity.Body = entity.Body.Replace("'", "''");
+                }
+
+                string query = $@"
+                SET datestyle = dmy;
+                INSERT INTO posts (id, postid, userid, body, date)
+	 	                VALUES (
+                {identity}, {entity.PostID}, {UserID}, '{entity.Body}', '{entity.Date}', current_timestamp)
+                ON CONFLICT (id) DO UPDATE 
+                SET body = '{entity.Body}',
+                       updatedate = current_timestamp
+                RETURNING *;";
+
+                using (var connection = GetConnection)
+                {
+                    var res = await connection.QueryFirstOrDefaultAsync<Comments>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+
+        public async Task<bool?> ManagePostVote(int? ID, int UserID, int PostID, bool? vote)
+        {
+            try
+            {
+                dynamic identity = ID.HasValue ? ID.Value : "default";
+                string query = "";
+                if (vote.HasValue)
+                {
+                    query = $@"
+                INSERT INTO postvotesjunction (id, postid, userid, vote)
+	 	                VALUES (
+                {identity}, {PostID}, {UserID}, '{vote}')
+                ON CONFLICT (id, postid, userid) DO UPDATE 
+                SET vote = {vote}
+                RETURNING vote;";
+                }
+                else
+                {
+                    query = $@"delete from postvotesjunction where id = {ID} and postid = {PostID} and userid = {UserID}";
+                }
+
+                using (var connection = GetConnection)
+                {
+                    var res = await connection.QueryFirstOrDefaultAsync<bool>(query);
+                    if (!vote.HasValue)
+                    {
+                        return null;
+                    }
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+
+        public async Task<bool?> ManageCommentVote(int? ID, int UserID, int CommentID, bool? vote)
+        {
+            try
+            {
+                dynamic identity = ID.HasValue ? ID.Value : "default";
+                string query = "";
+                if (vote.HasValue)
+                {
+                    query = $@"
+                INSERT INTO commentvotesjunction (id, commentid, userid, vote)
+	 	                VALUES (
+                {identity}, {CommentID}, {UserID}, '{vote}')
+                ON CONFLICT (id, commentid, userid) DO UPDATE 
+                SET vote = {vote}
+                RETURNING vote;";
+                }
+                else
+                {
+                    query = $@"delete from commentvotesjunction where id = {ID} and commentid = {CommentID} and userid = {UserID}";
+                }
+
+                using (var connection = GetConnection)
+                {
+                    var res = await connection.QueryFirstOrDefaultAsync<bool>(query);
+                    if (!vote.HasValue)
+                    {
+                        return null;
+                    }
                     return res;
                 }
             }
