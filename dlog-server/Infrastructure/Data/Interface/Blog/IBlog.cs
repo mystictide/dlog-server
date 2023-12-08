@@ -8,13 +8,14 @@ namespace dlog_server.Infrastructure.Data.Interface.Blog
     {
         Task<Posts>? Get(int? ID, string? Title);
         Task<Comments>? GetComment(int ID);
-        Task<PostReturn>? GetView(int? ID, string? Title);
+        Task<PostReturn>? GetView(int? ID, string? Title, int? UserID);
         Task<IEnumerable<PostReturn>>? GetRecentPosts();
+        Task<PostStatistics>? GetPostStatistics(int ID);
         Task<FilteredList<PostReturn>> FilterPosts(Filter filter);
         Task<bool>? ToggleVisibility(Posts entity);
         Task<Posts>? ManagePost(int UserID, Posts entity);
         Task<Comments>? ManageComment(int UserID, Comments entity);
-        Task<bool?> ManagePostVote(int? ID, int UserID, int PostID, bool? vote);
-        Task<bool?> ManageCommentVote(int? ID, int UserID, int CommentID, bool? vote);
+        Task<bool?> ManagePostVote(int UserID, int PostID, bool? vote);
+        Task<bool?> ManageCommentVote(int UserID, int CommentID, bool? vote);
     }
 }

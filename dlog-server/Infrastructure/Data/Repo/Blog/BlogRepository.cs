@@ -131,15 +131,16 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
             }
         }
 
-        public async Task<PostReturn>? GetView(int? ID, string? Title)
+        public async Task<PostReturn>? GetView(int? ID, string? Title, int? UserID)
         {
             try
             {
-                string WhereClause = $" WHERE t.id = {ID ?? 0} AND (t.title ilike '{Title}')";
+                string WhereClause = $"WHERE t.id = {ID ?? 0} AND (t.title ilike '{Title}')";
 
                 string query = $@"
-                SELECT t.*, c.id, c.name, u.id, u.username, u2.*
+                SELECT t.*, p.vote as UserVote, c.id, c.name, u.id, u.username, u2.*
                 FROM posts t
+                left join postvotesjunction p on p.userid = {UserID ?? 0}
                 left join categories c on c.id = t.categoryid
                 left join users u on u.id = t.userid
                 left join usersettings u2 on u2.userid = t.userid
@@ -154,8 +155,13 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                         post.AuthorSocials = us;
                         return post;
                     }, splitOn: "id");
-
-                    return res.FirstOrDefault();
+                    var result = res.FirstOrDefault();
+                    var statsq = $@"select
+                    (SELECT count(t.id) FROM postvotesjunction t where t.postid = {result.ID ?? 0} and t.vote = true) as Upvotes,
+                    (SELECT count(t.id) FROM postvotesjunction t where t.postid = {result.ID ?? 0} and t.vote = false) as Downvotes
+                    from posts p where p.id = {result.ID ?? 0};";
+                    result.Votes = await con.QueryFirstOrDefaultAsync<PostStatistics>(statsq);
+                    return result;
                 }
             }
             catch (Exception ex)
@@ -181,6 +187,27 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 using (var con = GetConnection)
                 {
                     var res = await con.QueryAsync<PostReturn>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }       
+        public async Task<PostStatistics>? GetPostStatistics(int ID)
+        {
+            try
+            {
+                var statsq = $@"select
+                    (SELECT count(t.id) FROM postvotesjunction t where t.postid = {ID} and t.vote = true) as Upvotes,
+                    (SELECT count(t.id) FROM postvotesjunction t where t.postid = {ID} and t.vote = false) as Downvotes
+                    from posts p where p.id = {ID};";
+
+                using (var con = GetConnection)
+                {
+                    var res = await con.QueryFirstOrDefaultAsync<PostStatistics>(statsq);
                     return res;
                 }
             }
@@ -287,25 +314,24 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
             }
         }
 
-        public async Task<bool?> ManagePostVote(int? ID, int UserID, int PostID, bool? vote)
+        public async Task<bool?> ManagePostVote(int UserID, int PostID, bool? vote)
         {
             try
             {
-                dynamic identity = ID.HasValue ? ID.Value : "default";
                 string query = "";
                 if (vote.HasValue)
                 {
                     query = $@"
                 INSERT INTO postvotesjunction (id, postid, userid, vote)
 	 	                VALUES (
-                {identity}, {PostID}, {UserID}, '{vote}')
-                ON CONFLICT (id, postid, userid) DO UPDATE 
+                default, {PostID}, {UserID}, '{vote}')
+                ON CONFLICT (postid, userid) DO UPDATE 
                 SET vote = {vote}
                 RETURNING vote;";
                 }
                 else
                 {
-                    query = $@"delete from postvotesjunction where id = {ID} and postid = {PostID} and userid = {UserID}";
+                    query = $@"delete from postvotesjunction where postid = {PostID} and userid = {UserID}";
                 }
 
                 using (var connection = GetConnection)
@@ -325,25 +351,24 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
             }
         }
 
-        public async Task<bool?> ManageCommentVote(int? ID, int UserID, int CommentID, bool? vote)
+        public async Task<bool?> ManageCommentVote(int UserID, int CommentID, bool? vote)
         {
             try
             {
-                dynamic identity = ID.HasValue ? ID.Value : "default";
                 string query = "";
                 if (vote.HasValue)
                 {
                     query = $@"
                 INSERT INTO commentvotesjunction (id, commentid, userid, vote)
 	 	                VALUES (
-                {identity}, {CommentID}, {UserID}, '{vote}')
-                ON CONFLICT (id, commentid, userid) DO UPDATE 
+                default, {CommentID}, {UserID}, '{vote}')
+                ON CONFLICT (commentid, userid) DO UPDATE 
                 SET vote = {vote}
                 RETURNING vote;";
                 }
                 else
                 {
-                    query = $@"delete from commentvotesjunction where id = {ID} and commentid = {CommentID} and userid = {UserID}";
+                    query = $@"delete from commentvotesjunction where commentid = {CommentID} and userid = {UserID}";
                 }
 
                 using (var connection = GetConnection)

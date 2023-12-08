@@ -30,14 +30,19 @@ namespace dlog_server.Infrastructure.Managers.Blog
             return await _repo.GetComment(ID);
         }
 
-        public async Task<PostReturn>? GetView(int? ID, string? Title)
+        public async Task<PostReturn>? GetView(int? ID, string? Title, int? UserID)
         {
-            return await _repo.GetView(ID, Title);
+            return await _repo.GetView(ID, Title, UserID);
         }
 
         public async Task<IEnumerable<PostReturn>>? GetRecentPosts()
         {
             return await _repo.GetRecentPosts();
+        }
+
+        public async Task<PostStatistics>? GetPostStatistics(int ID)
+        {
+            return await _repo.GetPostStatistics(ID);
         }
 
         public async Task<bool>? ToggleVisibility(Posts entity)
@@ -55,14 +60,14 @@ namespace dlog_server.Infrastructure.Managers.Blog
             return await _repo.ManageComment(UserID, entity);
         }
 
-        public async Task<bool?> ManagePostVote(int? ID, int UserID, int PostID, bool? vote)
+        public async Task<bool?> ManagePostVote(int UserID, int PostID, bool? vote)
         {
-            return await _repo.ManagePostVote(ID, UserID, PostID, vote);
+            return await _repo.ManagePostVote(UserID, PostID, vote);
         }
 
-        public async Task<bool?> ManageCommentVote(int? ID, int UserID, int CommentID, bool? vote)
+        public async Task<bool?> ManageCommentVote(int UserID, int CommentID, bool? vote)
         {
-            return await _repo.ManageCommentVote(ID, UserID, CommentID, vote);
+            return await _repo.ManageCommentVote(UserID, CommentID, vote);
         }
     }
 }

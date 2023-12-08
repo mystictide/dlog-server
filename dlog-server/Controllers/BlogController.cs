@@ -1,5 +1,6 @@
 ﻿using dlog.server.Helpers;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.Design;
 using dlog_server.Infrastructure.Models.Blog;
 using dlog_server.Infrastructure.Managers.Blog;
 
@@ -34,7 +35,8 @@ namespace dlog_server.Controllers
             {
                 if (View)
                 {
-                    return Ok(await new BlogManager().GetView(ID, Title));
+                    var UserID = AuthHelpers.CurrentUserID(HttpContext);
+                    return Ok(await new BlogManager().GetView(ID, Title, UserID));
                 }
                 var result = await new BlogManager().Get(ID, Title);
                 return Ok(result);
@@ -121,13 +123,15 @@ namespace dlog_server.Controllers
 
         [HttpPost]
         [Route("manage/vote/post")]
-        public async Task<IActionResult> ManagePostVote([FromQuery] int? ID, [FromQuery] int PostID, [FromQuery] bool? vote)
+        public async Task<IActionResult> ManagePostVote([FromQuery] int PostID, [FromQuery] bool? vote)
         {
             try
             {
                 if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
                 {
-                    var result = await new BlogManager().ManagePostVote(ID, AuthHelpers.CurrentUserID(HttpContext), PostID, vote);
+                    var voteres = await new BlogManager().ManagePostVote(AuthHelpers.CurrentUserID(HttpContext), PostID, vote);
+                    var stats = await new BlogManager().GetPostStatistics(PostID);
+                    var result = new { vote = voteres, votecount = stats };
                     return Ok(result);
                 }
                 return StatusCode(401, "Authorization failed");
@@ -140,13 +144,13 @@ namespace dlog_server.Controllers
 
         [HttpPost]
         [Route("manage/vote/comment")]
-        public async Task<IActionResult> ManageCommentVote([FromQuery] int? ID, [FromQuery] int CommentID, [FromQuery] bool? vote)
+        public async Task<IActionResult> ManageCommentVote([FromQuery] int CommentID, [FromQuery] bool? vote)
         {
             try
             {
                 if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
                 {
-                    var result = await new BlogManager().ManageCommentVote(ID, AuthHelpers.CurrentUserID(HttpContext), CommentID, vote);
+                    var result = await new BlogManager().ManageCommentVote(AuthHelpers.CurrentUserID(HttpContext), CommentID, vote);
                     return Ok(result);
                 }
                 return StatusCode(401, "Authorization failed");

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using dlog_server.Infrastructure.Models.Blog;
 using dlog_server.Infrastructure.Models.Users;
 
 namespace dlog.server.Infrasructure.Models.Returns
@@ -13,6 +14,8 @@ namespace dlog.server.Infrasructure.Models.Returns
         public string? Category { get; set; }
         public string? Author { get; set; }
         public UserSettings? AuthorSocials { get; set; }
+        public PostStatistics? Votes { get; set; }
+        public bool? UserVote { get; set; }
         public string? AuthorImage
         {
             get
