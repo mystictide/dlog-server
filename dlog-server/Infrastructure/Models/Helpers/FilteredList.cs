@@ -15,6 +15,7 @@
     {
         public Filter()
         {
+            ID = 0;
             Keyword = "";
             Category = 0;
             Author = "";
@@ -24,6 +25,8 @@
             IsMedia = false;
             IsAdvanced = false;
         }
+
+        public int? ID { get; set; }
 
         public string? Keyword { get; set; }
 

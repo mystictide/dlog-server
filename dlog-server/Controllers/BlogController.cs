@@ -1,8 +1,8 @@
 ﻿using dlog.server.Helpers;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.Design;
 using dlog_server.Infrastructure.Models.Blog;
 using dlog_server.Infrastructure.Managers.Blog;
+using dlog.server.Infrasructure.Models.Helpers;
 
 namespace dlog_server.Controllers
 {
@@ -154,6 +154,29 @@ namespace dlog_server.Controllers
                     return Ok(result);
                 }
                 return StatusCode(401, "Authorization failed");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(401, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        [Route("filter/comments")]
+        public async Task<IActionResult> FilterComments([FromBody] Filter filter)
+        {
+            try
+            {
+                if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
+                {
+                    var result = await new BlogManager().FilterComments(filter, AuthHelpers.CurrentUserID(HttpContext));
+                    return Ok(result);
+                }
+                else
+                {
+                    var result = await new BlogManager().FilterComments(filter, 0);
+                    return Ok(result);
+                }
             }
             catch (Exception ex)
             {

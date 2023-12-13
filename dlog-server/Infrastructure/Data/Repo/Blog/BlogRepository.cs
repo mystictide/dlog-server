@@ -4,6 +4,7 @@ using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrasructure.Models.Helpers;
 using dlog.server.Infrasructure.Models.Returns;
 using dlog.server.Infrastructure.Models.Helpers;
+using dlog_server.Infrastructure.Models.Returns;
 using dlog.server.Infrastructure.Data.Repo.Helpers;
 using dlog_server.Infrastructure.Data.Interface.Blog;
 
@@ -130,7 +131,6 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return null;
             }
         }
-
         public async Task<PostReturn>? GetView(int? ID, string? Title, int? UserID)
         {
             try
@@ -170,6 +170,56 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return null;
             }
         }
+        public async Task<FilteredList<CommentReturn>>? FilterComments(Filter filter, int? UserID)
+        {
+            try
+            {
+                var filterModel = new CommentReturn();
+                FilteredList<CommentReturn> request = new FilteredList<CommentReturn>()
+                {
+                    filter = filter,
+                    filterModel = filterModel,
+                };
+                FilteredList<CommentReturn> result = new FilteredList<CommentReturn>();
+
+                string WhereClause = $@"WHERE t.postid = {filter.ID}";
+                string query_count = $@"Select Count(t.id) from comments t {WhereClause}";
+
+                using (var con = GetConnection)
+                {
+                    result.totalItems = await con.QueryFirstOrDefaultAsync<int>(query_count);
+                    request.filter.pager = new Page(result.totalItems, request.filter.pageSize, request.filter.page);
+                    string query = $@"
+                    SELECT t.*, c.vote as UserVote, u.id, u.username, cvu.id, count(cvu.id) Upvotes, count(cvd.id) Downvotes
+                    FROM comments t
+                    left join commentvotesjunction c on c.userid = {UserID ?? 0}
+                    left join users u on u.id = t.userid
+                    left join commentvotesjunction cvu on cvu.commentid = t.id and cvu.vote = true
+                    left join commentvotesjunction cvd on cvd.commentid = t.id and cvd.vote = false
+                    {WhereClause}
+                    group by t.id, c.vote, u.id, cvu.id
+                    order by t.date {filter.SortBy}
+                    OFFSET {request.filter.pager.StartIndex} ROWS
+                    FETCH NEXT {request.filter.pageSize} ROWS ONLY";
+
+                    result.data = await con.QueryAsync<CommentReturn, UserReturn, CommentStatistics, CommentReturn>(query, (comment, u, cs) =>
+                    {
+                        comment.Author = u.Username;
+                        comment.Votes = cs;
+                        return comment;
+                    }, splitOn: "id");
+
+                    result.filter = request.filter;
+                    result.filterModel = request.filterModel;
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
         public async Task<IEnumerable<PostReturn>>? GetRecentPosts()
         {
             try
@@ -184,9 +234,21 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 {WhereClause}
                 order by COALESCE(t.updatedate, t.date) desc limit 5;";
 
+                string sQuery = $@"
+                SELECT *,
+                (select name from categories c where c.id = t.categoryid) as Category,
+                (select username from users u where u.id = t.userid) as Author
+                FROM posts t
+                WHERE ismedia = false
+                order by COALESCE(t.updatedate, t.date) desc limit 5;";
+
                 using (var con = GetConnection)
                 {
                     var res = await con.QueryAsync<PostReturn>(query);
+                    if (res == null || res?.Count() < 1)
+                    {
+                        res = await con.QueryAsync<PostReturn>(sQuery);
+                    }
                     return res;
                 }
             }
@@ -195,7 +257,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 await new LogsRepository().CreateLog(ex);
                 return null;
             }
-        }       
+        }
         public async Task<PostStatistics>? GetPostStatistics(int ID)
         {
             try
@@ -293,9 +355,9 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
 
                 string query = $@"
                 SET datestyle = dmy;
-                INSERT INTO posts (id, postid, userid, body, date)
+                INSERT INTO comments (id, postid, userid, body, date)
 	 	                VALUES (
-                {identity}, {entity.PostID}, {UserID}, '{entity.Body}', '{entity.Date}', current_timestamp)
+                {identity}, {entity.PostID}, {UserID}, '{entity.Body}', current_timestamp)
                 ON CONFLICT (id) DO UPDATE 
                 SET body = '{entity.Body}',
                        updatedate = current_timestamp

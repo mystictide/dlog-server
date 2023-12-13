@@ -3,6 +3,7 @@ using dlog.server.Infrasructure.Models.Helpers;
 using dlog.server.Infrasructure.Models.Returns;
 using dlog.server.Infrastructure.Models.Helpers;
 using dlog_server.Infrastructure.Data.Repo.Blog;
+using dlog_server.Infrastructure.Models.Returns;
 using dlog_server.Infrastructure.Data.Interface.Blog;
 
 namespace dlog_server.Infrastructure.Managers.Blog
@@ -38,6 +39,11 @@ namespace dlog_server.Infrastructure.Managers.Blog
         public async Task<IEnumerable<PostReturn>>? GetRecentPosts()
         {
             return await _repo.GetRecentPosts();
+        }
+
+        public async Task<FilteredList<CommentReturn>> FilterComments(Filter filter, int? UserID)
+        {
+            return await _repo.FilterComments(filter, UserID);
         }
 
         public async Task<PostStatistics>? GetPostStatistics(int ID)
