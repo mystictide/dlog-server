@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrastructure.Managers.Users;
+using dlog_server.Infrastructure.Models.Helpers;
 
 namespace dlog.server.Controllers
 {
@@ -135,6 +136,44 @@ namespace dlog.server.Controllers
                 {
                     return StatusCode(401, "Authorization failed");
                 }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(401, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        [Route("follow")]
+        public async Task<IActionResult> ManageFollow([FromBody] UserFunctions entity)
+        {
+            try
+            {
+                if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
+                {
+                    var res = await new UserManager().ManageFollow(entity, AuthHelpers.CurrentUserID(HttpContext));
+                    return Ok(res);
+                }
+                return StatusCode(401, "Authorization failed");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(401, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        [Route("block")]
+        public async Task<IActionResult> ManageBlock([FromBody] UserFunctions entity)
+        {
+            try
+            {
+                if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
+                {
+                    var res = await new UserManager().ManageBlock(entity, AuthHelpers.CurrentUserID(HttpContext));
+                    return Ok(res);
+                }
+                return StatusCode(401, "Authorization failed");
             }
             catch (Exception ex)
             {

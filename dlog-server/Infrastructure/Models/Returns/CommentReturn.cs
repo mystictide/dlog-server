@@ -1,4 +1,5 @@
-﻿using Dapper.Contrib.Extensions;
+﻿using Newtonsoft.Json;
+using Dapper.Contrib.Extensions;
 using dlog_server.Infrastructure.Models.Blog;
 
 namespace dlog_server.Infrastructure.Models.Returns
@@ -8,6 +9,7 @@ namespace dlog_server.Infrastructure.Models.Returns
         [Key]
         public int? ID { get; set; }
         public int PostID { get; set; }
+        [JsonProperty(PropertyName = "UID")]
         public int UserID { get; set; }
         public string? Body { get; set; }
         public DateTime? Date { get; set; }

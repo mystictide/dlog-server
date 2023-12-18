@@ -36,9 +36,9 @@ namespace dlog_server.Infrastructure.Managers.Blog
             return await _repo.GetView(ID, Title, UserID);
         }
 
-        public async Task<IEnumerable<PostReturn>>? GetRecentPosts()
+        public async Task<IEnumerable<PostReturn>>? GetRecentPosts(bool isMedia)
         {
-            return await _repo.GetRecentPosts();
+            return await _repo.GetRecentPosts(isMedia);
         }
 
         public async Task<FilteredList<CommentReturn>> FilterComments(Filter filter, int? UserID)
@@ -49,6 +49,11 @@ namespace dlog_server.Infrastructure.Managers.Blog
         public async Task<PostStatistics>? GetPostStatistics(int ID)
         {
             return await _repo.GetPostStatistics(ID);
+        }       
+        
+        public async Task<CommentStatistics>? GetCommentStatistics(int ID)
+        {
+            return await _repo.GetCommentStatistics(ID);
         }
 
         public async Task<bool>? ToggleVisibility(Posts entity)

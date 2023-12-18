@@ -192,7 +192,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                     string query = $@"
                     SELECT t.*, c.vote as UserVote, u.id, u.username, cvu.id, count(cvu.id) Upvotes, count(cvd.id) Downvotes
                     FROM comments t
-                    left join commentvotesjunction c on c.userid = {UserID ?? 0}
+                    left join commentvotesjunction c on c.userid = {UserID ?? 0} and c.commentid = t.id
                     left join users u on u.id = t.userid
                     left join commentvotesjunction cvu on cvu.commentid = t.id and cvu.vote = true
                     left join commentvotesjunction cvd on cvd.commentid = t.id and cvd.vote = false
@@ -220,11 +220,13 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return null;
             }
         }
-        public async Task<IEnumerable<PostReturn>>? GetRecentPosts()
+        public async Task<IEnumerable<PostReturn>>? GetRecentPosts(bool isMedia)
         {
             try
             {
-                string WhereClause = $"WHERE ismedia = false AND t.date > current_date - interval '7 days' OR t.updatedate > current_date - interval '7 days'";
+                //string WhereClause = $"WHERE ismedia = {isMedia} AND t.date > current_date - interval '7 days' OR t.updatedate > current_date - interval '7 days'";
+
+                string WhereClause = $"WHERE ismedia = {isMedia}";
 
                 string query = $@"
                 SELECT *,
@@ -232,15 +234,15 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 (select username from users u where u.id = t.userid) as Author
                 FROM posts t
                 {WhereClause}
-                order by COALESCE(t.updatedate, t.date) desc limit 5;";
+                order by COALESCE(t.updatedate, t.date) desc limit {(isMedia ? 8 : 6)};";
 
                 string sQuery = $@"
                 SELECT *,
                 (select name from categories c where c.id = t.categoryid) as Category,
                 (select username from users u where u.id = t.userid) as Author
                 FROM posts t
-                WHERE ismedia = false
-                order by COALESCE(t.updatedate, t.date) desc limit 5;";
+                WHERE ismedia = {isMedia}
+                order by COALESCE(t.updatedate, t.date) desc limit {(isMedia ? 8 : 6)};";
 
                 using (var con = GetConnection)
                 {
@@ -270,6 +272,27 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 using (var con = GetConnection)
                 {
                     var res = await con.QueryFirstOrDefaultAsync<PostStatistics>(statsq);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+        public async Task<CommentStatistics>? GetCommentStatistics(int ID)
+        {
+            try
+            {
+                var statsq = $@"select
+                    (SELECT count(t.id) FROM commentvotesjunction t where t.commentid = {ID} and t.vote = true) as Upvotes,
+                    (SELECT count(t.id) FROM commentvotesjunction t where t.commentid = {ID} and t.vote = false) as Downvotes
+                    from comments p where p.id = {ID};";
+
+                using (var con = GetConnection)
+                {
+                    var res = await con.QueryFirstOrDefaultAsync<CommentStatistics>(statsq);
                     return res;
                 }
             }

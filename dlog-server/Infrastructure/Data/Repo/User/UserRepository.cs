@@ -1,7 +1,11 @@
 ﻿using Dapper;
 using dlog.server.Infrasructure.Models.Users;
+using dlog_server.Infrastructure.Models.Blog;
 using dlog_server.Infrastructure.Models.Users;
+using dlog.server.Infrasructure.Models.Returns;
 using dlog.server.Infrastructure.Models.Helpers;
+using dlog_server.Infrastructure.Models.Returns;
+using dlog_server.Infrastructure.Models.Helpers;
 using dlog.server.Infrastructure.Data.Repo.Helpers;
 using dlog.server.Infrastructure.Data.Interface.User;
 using dlog.server.Infrasructure.Models.Users.Helpers;
@@ -166,6 +170,82 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 {
                     var res = await con.QueryFirstOrDefaultAsync<Users>(query);
                     return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+
+        public async Task<UserView>? ViewUser(string? Username, int? UserID)
+        {
+            try
+            {
+                var param = new DynamicParameters();
+                string WhereClause = $" WHERE t.username ilike '{Username}'";
+                string query = $@"
+                SELECT t.*, us.* 
+                FROM users t 
+                left join usersettings us on us.userid = t.id 
+                {WhereClause};";
+
+                string postsQuery = $@"
+                SELECT * FROM posts t 
+                WHERE t.userid = @UserID and t.ismedia = false;";
+
+                string mediaQuery = $@"
+                SELECT * FROM posts t 
+                WHERE t.userid = @UserID and t.ismedia = true;";
+
+                string followingQuery = $@"
+                SELECT t.id as uid, t.username FROM users t 
+                WHERE t.id in (select followedid from userfollowjunction ufj where ufj.followerid = @UserID)";
+
+                string followersQuery = $@"
+                SELECT t.id as uid, t.username FROM users t 
+                WHERE t.id in (select followerid from userfollowjunction ufj where ufj.followedid = @UserID)";
+
+                string statsQuery = $@"
+                select
+                (SELECT count(id) FROM posts p where p.userid = t.id) as PostsCount,
+                (SELECT count(id) FROM userfollowjunction fn where fn.followerid = t.id) as FollowingCount,
+                (SELECT count(id) FROM userfollowjunction fw where fw.followedid = t.id) as FollowersCount,
+                (SELECT (case when exists (SELECT id FROM userfollowjunction isf where isf.followerid = {UserID ?? 0} and isf.followedid = t.id)
+                    then 1 
+                    else 0 
+                  end)) as IsFollowing,
+                (SELECT (case when exists (SELECT id FROM userfollowjunction isfy where isfy.followerid = t.id and isfy.followedid = {UserID ?? 0})
+                    then 1 
+                    else 0 
+                  end)) as IsFollowingYou,
+                (SELECT (case when exists (SELECT id FROM userblockjunction isb where isb.blockerid = {UserID ?? 0} and isb.blockedid = t.id)
+                    then 1 
+                    else 0 
+                  end)) as IsBlocked,
+                (SELECT (case when exists (SELECT id FROM userblockjunction isby where isby.blockerid = t.id and isby.blockedid = {UserID ?? 0})
+                    then 1 
+                    else 0 
+                  end)) as IsBlockedYou
+                FROM users t WHERE t.id = @UserID;";
+
+                using (var con = GetConnection)
+                {
+                    var res = await con.QueryAsync<UserView, UserSettings, UserView>(query, (user, us) =>
+                    {
+                        user.Socials = us;
+                        return user;
+                    }, splitOn: "id");
+                    var result = res.FirstOrDefault();
+                    param.Add("@UserID", result.ID);
+                    result.RecentPosts = await con.QueryAsync<Posts>(postsQuery, param);
+                    result.RecentMedia = await con.QueryAsync<Posts>(mediaQuery, param);
+                    result.Following = await con.QueryAsync<UserReturn>(followingQuery, param);
+                    result.Followers = await con.QueryAsync<UserReturn>(followersQuery, param);
+                    result.UserStatistics = await con.QueryFirstOrDefaultAsync<UserStatistics>(statsQuery, param);
+
+                    return result;
                 }
             }
             catch (Exception ex)
@@ -349,6 +429,68 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 return null;
             }
 
+        }
+
+        public async Task<bool?> ManageFollow(UserFunctions entity, int UserID)
+        {
+            try
+            {
+                string query = "";
+                if (!entity.ID.HasValue)
+                {
+                    query = $@"
+                INSERT INTO userfollowjunction (id, followerid, followedid)
+	 	                VALUES (default, {UserID}, {entity.TargetID})
+                ON CONFLICT (id, followerid, followedid) DO NOTHING 
+                RETURNING True;";
+                }
+                else
+                {
+                    query = $@"delete from userfollowjunction where followerid = {UserID} and followedid = {entity.TargetID} RETURNING False;";
+                }
+
+                using (var connection = GetConnection)
+                {
+                    var res = await connection.QueryFirstOrDefaultAsync<bool>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+
+        public async Task<bool?> ManageBlock(UserFunctions entity, int UserID)
+        {
+            try
+            {
+                string query = "";
+                if (!entity.ID.HasValue)
+                {
+                    query = $@"
+                INSERT INTO userblockjunction (id, blockerid, blockedid)
+	 	                VALUES (default, {UserID}, {entity.TargetID})
+                ON CONFLICT (id, blockerid, blockedid) DO NOTHING 
+                RETURNING True;";
+                }
+                else
+                {
+                    query = $@"delete from userblockjunction where blockerid = {UserID} and blockedid = {entity.TargetID} RETURNING False;";
+                }
+
+                using (var connection = GetConnection)
+                {
+                    var res = await connection.QueryFirstOrDefaultAsync<bool>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
         }
     }
 }

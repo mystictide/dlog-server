@@ -10,9 +10,10 @@ namespace dlog_server.Infrastructure.Data.Interface.Blog
         Task<Posts>? Get(int? ID, string? Title);
         Task<Comments>? GetComment(int ID);
         Task<PostReturn>? GetView(int? ID, string? Title, int? UserID);
-        Task<IEnumerable<PostReturn>>? GetRecentPosts();
+        Task<IEnumerable<PostReturn>>? GetRecentPosts(bool isMedia);
         Task<FilteredList<CommentReturn>>? FilterComments(Filter filter, int? UserID);
         Task<PostStatistics>? GetPostStatistics(int ID);
+        Task<CommentStatistics>? GetCommentStatistics(int ID);
         Task<FilteredList<PostReturn>> FilterPosts(Filter filter);
         Task<bool>? ToggleVisibility(Posts entity);
         Task<Posts>? ManagePost(int UserID, Posts entity);

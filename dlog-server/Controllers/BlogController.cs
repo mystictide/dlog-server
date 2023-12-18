@@ -150,7 +150,9 @@ namespace dlog_server.Controllers
             {
                 if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
                 {
-                    var result = await new BlogManager().ManageCommentVote(AuthHelpers.CurrentUserID(HttpContext), CommentID, vote);
+                    var voteres = await new BlogManager().ManageCommentVote(AuthHelpers.CurrentUserID(HttpContext), CommentID, vote);
+                    var stats = await new BlogManager().GetCommentStatistics(CommentID);
+                    var result = new { vote = voteres, votecount = stats };
                     return Ok(result);
                 }
                 return StatusCode(401, "Authorization failed");

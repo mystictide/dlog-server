@@ -9,5 +9,12 @@ namespace dlog.server.Infrasructure.Models.Returns
         public string? Email { get; set; }
         public string? Token { get; set; }
         public UserSettings? Settings { get; set; }
+        public string? UserImage
+        {
+            get
+            {
+                return "https://dapi.herrguller.cc/static/avatars/user/" + UID + "/ua-small.jpg";
+            }
+        }
     }
 }

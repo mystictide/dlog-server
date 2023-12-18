@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using dlog.server.Helpers;
+using Microsoft.AspNetCore.Mvc;
 using dlog_server.Infrastructure.Managers.Blog;
 using dlog.server.Infrasructure.Models.Helpers;
+using dlog.server.Infrastructure.Managers.Users;
 
 namespace dlog.server.Controllers
 {
@@ -10,11 +12,11 @@ namespace dlog.server.Controllers
     {
         [HttpGet]
         [Route("recent/post")]
-        public async Task<IActionResult> GetRecentPosts()
+        public async Task<IActionResult> GetRecentPosts([FromQuery] bool isMedia)
         {
             try
             {
-                var result = await new BlogManager().GetRecentPosts();
+                var result = await new BlogManager().GetRecentPosts(isMedia);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -30,6 +32,22 @@ namespace dlog.server.Controllers
             try
             {
                 var result = await new BlogManager().FilterPosts(filter);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(401, ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("get/user")]
+        public async Task<IActionResult> GetUser([FromQuery] string Username)
+        {
+            try
+            {
+                int? UserID = AuthHelpers.CurrentUserID(HttpContext);
+                var result = await new UserManager().ViewUser(Username, UserID ?? 0);
                 return Ok(result);
             }
             catch (Exception ex)

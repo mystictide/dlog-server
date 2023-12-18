@@ -2,10 +2,11 @@
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using dlog.server.Infrasructure.Models.Users;
 using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrastructure.Data.Repo.User;
 using dlog.server.Infrastructure.Models.Helpers;
+using dlog_server.Infrastructure.Models.Returns;
+using dlog_server.Infrastructure.Models.Helpers;
 using dlog.server.Infrastructure.Data.Interface.User;
 
 namespace dlog.server.Infrastructure.Managers.Users
@@ -122,6 +123,11 @@ namespace dlog.server.Infrastructure.Managers.Users
             return await _repo.Get(ID, Username);
         }
 
+        public async Task<UserView>? ViewUser(string? Username, int? UserID)
+        {
+            return await _repo.ViewUser(Username, UserID);
+        }
+
         public async Task<UserSettings>? GetUserSettings(int? ID, string? Username)
         {
             return await _repo.GetUserSettings(ID, Username);
@@ -157,6 +163,16 @@ namespace dlog.server.Infrastructure.Managers.Users
         public async Task<UserSettings>? UpdateSocials(int ID, UserSettings entity)
         {
             return await _repo.UpdateSocials(ID, entity);
+        }
+
+        public async Task<bool?> ManageFollow(UserFunctions entity, int UserID)
+        {
+            return await _repo.ManageFollow(entity, UserID);
+        }
+
+        public async Task<bool?> ManageBlock(UserFunctions entity, int UserID)
+        {
+            return await _repo.ManageBlock(entity, UserID);
         }
     }
 }
