@@ -192,12 +192,20 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 {WhereClause};";
 
                 string postsQuery = $@"
-                SELECT * FROM posts t 
-                WHERE t.userid = @UserID and t.ismedia = false;";
+                SELECT *,
+                (select name from categories c where c.id = t.categoryid) as Category,
+                (select username from users u where u.id = t.userid) as Author
+                FROM posts t 
+                WHERE t.userid = @UserID and t.ismedia = false
+                order by COALESCE(t.updatedate, t.date) desc limit 6;";
 
                 string mediaQuery = $@"
-                SELECT * FROM posts t 
-                WHERE t.userid = @UserID and t.ismedia = true;";
+                SELECT *,
+                (select name from categories c where c.id = t.categoryid) as Category,
+                (select username from users u where u.id = t.userid) as Author
+                FROM posts t 
+                WHERE t.userid = @UserID and t.ismedia = true
+                order by COALESCE(t.updatedate, t.date) desc limit 8;";
 
                 string followingQuery = $@"
                 SELECT t.id as uid, t.username FROM users t 
