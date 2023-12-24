@@ -190,21 +190,23 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                     result.totalItems = await con.QueryFirstOrDefaultAsync<int>(query_count);
                     request.filter.pager = new Page(result.totalItems, request.filter.pageSize, request.filter.page);
                     string query = $@"
-                    SELECT t.*, c.vote as UserVote, u.id, u.username, cvu.id, count(cvu.id) Upvotes, count(cvd.id) Downvotes
+                    SELECT t.*, c.vote as UserVote, u.id, u.username, cvu.id, count(cvu.id) Upvotes, count(cvd.id) Downvotes, u2.*
                     FROM comments t
                     left join commentvotesjunction c on c.userid = {UserID ?? 0} and c.commentid = t.id
                     left join users u on u.id = t.userid
                     left join commentvotesjunction cvu on cvu.commentid = t.id and cvu.vote = true
-                    left join commentvotesjunction cvd on cvd.commentid = t.id and cvd.vote = false
+                    left join commentvotesjunction cvd on cvd.commentid = t.id and cvd.vote = false  
+                    left join usersettings u2 on u2.userid = t.userid
                     {WhereClause}
-                    group by t.id, c.vote, u.id, cvu.id
+                    group by t.id, c.vote, u.id, cvu.id, u2.id
                     order by t.date {filter.SortBy}
                     OFFSET {request.filter.pager.StartIndex} ROWS
                     FETCH NEXT {request.filter.pageSize} ROWS ONLY";
 
-                    result.data = await con.QueryAsync<CommentReturn, UserReturn, CommentStatistics, CommentReturn>(query, (comment, u, cs) =>
+                    result.data = await con.QueryAsync<CommentReturn, UserReturn, CommentStatistics, UserSettings, CommentReturn>(query, (comment, u, cs, us) =>
                     {
                         comment.Author = u.Username;
+                        comment.AuthorSocials = us;
                         comment.Votes = cs;
                         return comment;
                     }, splitOn: "id");
@@ -226,31 +228,24 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
             {
                 //string WhereClause = $"WHERE ismedia = {isMedia} AND t.date > current_date - interval '7 days' OR t.updatedate > current_date - interval '7 days'";
 
-                string WhereClause = $"WHERE ismedia = {isMedia}";
-
                 string query = $@"
-                SELECT *,
-                (select name from categories c where c.id = t.categoryid) as Category,
-                (select username from users u where u.id = t.userid) as Author
+                SELECT t.*, u.id, u.username, c.*, u2.id, u2.picture
                 FROM posts t
-                {WhereClause}
-                order by COALESCE(t.updatedate, t.date) desc limit {(isMedia ? 8 : 6)};";
-
-                string sQuery = $@"
-                SELECT *,
-                (select name from categories c where c.id = t.categoryid) as Category,
-                (select username from users u where u.id = t.userid) as Author
-                FROM posts t
+                left join users u on u.id = t.userid
+                left join categories c on c.id = t.categoryid
+                left join usersettings u2 on u2.userid = t.userid
                 WHERE ismedia = {isMedia}
                 order by COALESCE(t.updatedate, t.date) desc limit {(isMedia ? 8 : 6)};";
 
                 using (var con = GetConnection)
                 {
-                    var res = await con.QueryAsync<PostReturn>(query);
-                    if (res == null || res?.Count() < 1)
-                    {
-                        res = await con.QueryAsync<PostReturn>(sQuery);
-                    }
+                    var res = await con.QueryAsync<PostReturn, UserReturn, Categories, UserSettings, PostReturn>(query, (post, u, c, us) =>
+                     {
+                         post.Author = u.Username;
+                         post.Category = c.Name;
+                         post.AuthorSocials = us;
+                         return post;
+                     }, splitOn: "id");
                     return res;
                 }
             }

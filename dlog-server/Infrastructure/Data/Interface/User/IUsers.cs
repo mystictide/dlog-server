@@ -20,7 +20,8 @@ namespace dlog.server.Infrastructure.Data.Interface.User
         Task<UserSettings>? UpdateSocials(int ID, UserSettings entity);
         Task<string>? ManageAvatar(string path, int userID);
         Task<bool>? DeactivateAccount(int ID);
-        Task<bool?> ManageFollow(UserFunctions entity, int UserID);
-        Task<bool?> ManageBlock(UserFunctions entity, int UserID);
+        Task<bool?> ManageFollow(int TargetID, int UserID);
+        Task<bool?> ManageBlock(int TargetID, int UserID);
+        Task<int?> GetUserFunctionID(int TargetID, int UserID, bool function);
     }
 }

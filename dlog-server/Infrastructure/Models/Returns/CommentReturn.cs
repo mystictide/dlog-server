@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Dapper.Contrib.Extensions;
 using dlog_server.Infrastructure.Models.Blog;
+using dlog_server.Infrastructure.Models.Users;
 
 namespace dlog_server.Infrastructure.Models.Returns
 {
@@ -14,12 +15,13 @@ namespace dlog_server.Infrastructure.Models.Returns
         public string? Body { get; set; }
         public DateTime? Date { get; set; }
         public DateTime? UpdateDate { get; set; }
+        public UserSettings? AuthorSocials { get; set; }
         public string? Author { get; set; }
         public string? AuthorImage
         {
             get
             {
-                return "https://dapi.herrguller.cc/static/avatars/user/" + UserID + "/ua-small.jpg";
+                return AuthorSocials?.Picture?.Length > 0 ? "https://dapi.herrguller.cc/static/avatars/user/" + UserID + "/ua-small.jpg" : null;
             }
         }
         public bool? UserVote { get; set; }

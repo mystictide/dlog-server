@@ -5,7 +5,6 @@ using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrasructure.Models.Returns;
 using dlog.server.Infrastructure.Models.Helpers;
 using dlog_server.Infrastructure.Models.Returns;
-using dlog_server.Infrastructure.Models.Helpers;
 using dlog.server.Infrastructure.Data.Repo.Helpers;
 using dlog.server.Infrastructure.Data.Interface.User;
 using dlog.server.Infrasructure.Models.Users.Helpers;
@@ -192,28 +191,30 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 {WhereClause};";
 
                 string postsQuery = $@"
-                SELECT *,
-                (select name from categories c where c.id = t.categoryid) as Category,
-                (select username from users u where u.id = t.userid) as Author
-                FROM posts t 
-                WHERE t.userid = @UserID and t.ismedia = false
+                SELECT t.*, u.id, u.username, c.*, u2.id, u2.picture
+                FROM posts t
+                left join users u on u.id = t.userid
+                left join categories c on c.id = t.categoryid
+                left join usersettings u2 on u2.userid = t.userid
+                WHERE t.userid = @UserID and ismedia = false
                 order by COALESCE(t.updatedate, t.date) desc limit 6;";
 
                 string mediaQuery = $@"
-                SELECT *,
-                (select name from categories c where c.id = t.categoryid) as Category,
-                (select username from users u where u.id = t.userid) as Author
-                FROM posts t 
-                WHERE t.userid = @UserID and t.ismedia = true
-                order by COALESCE(t.updatedate, t.date) desc limit 8;";
+                SELECT t.*, u.id, u.username, c.*, u2.id, u2.picture
+                FROM posts t
+                left join users u on u.id = t.userid
+                left join categories c on c.id = t.categoryid
+                left join usersettings u2 on u2.userid = t.userid
+                WHERE t.userid = @UserID and ismedia = true
+                order by COALESCE(t.updatedate, t.date) desc limit 6;";
 
                 string followingQuery = $@"
                 SELECT t.id as uid, t.username FROM users t 
-                WHERE t.id in (select followedid from userfollowjunction ufj where ufj.followerid = @UserID)";
+                WHERE t.id in (select followedid from userfollowjunction ufj where ufj.followerid = @UserID) limit 15;";
 
                 string followersQuery = $@"
                 SELECT t.id as uid, t.username FROM users t 
-                WHERE t.id in (select followerid from userfollowjunction ufj where ufj.followedid = @UserID)";
+                WHERE t.id in (select followerid from userfollowjunction ufj where ufj.followedid = @UserID) limit 15;";
 
                 string statsQuery = $@"
                 select
@@ -247,8 +248,20 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                     }, splitOn: "id");
                     var result = res.FirstOrDefault();
                     param.Add("@UserID", result.ID);
-                    result.RecentPosts = await con.QueryAsync<Posts>(postsQuery, param);
-                    result.RecentMedia = await con.QueryAsync<Posts>(mediaQuery, param);
+                    result.RecentPosts = await con.QueryAsync<PostReturn, UserReturn, Categories, UserSettings, PostReturn>(postsQuery, (post, u, c, us) =>
+                    {
+                        post.Author = u.Username;
+                        post.Category = c.Name;
+                        post.AuthorSocials = us;
+                        return post;
+                    }, param, splitOn: "id");
+                    result.RecentMedia = await con.QueryAsync<PostReturn, UserReturn, Categories, UserSettings, PostReturn>(mediaQuery, (post, u, c, us) =>
+                    {
+                        post.Author = u.Username;
+                        post.Category = c.Name;
+                        post.AuthorSocials = us;
+                        return post;
+                    }, param, splitOn: "id");
                     result.Following = await con.QueryAsync<UserReturn>(followingQuery, param);
                     result.Followers = await con.QueryAsync<UserReturn>(followersQuery, param);
                     result.UserStatistics = await con.QueryFirstOrDefaultAsync<UserStatistics>(statsQuery, param);
@@ -439,22 +452,23 @@ namespace dlog.server.Infrastructure.Data.Repo.User
 
         }
 
-        public async Task<bool?> ManageFollow(UserFunctions entity, int UserID)
+        public async Task<bool?> ManageFollow(int TargetID, int UserID)
         {
             try
             {
+                var ID = await GetUserFunctionID(TargetID, UserID, true);
                 string query = "";
-                if (!entity.ID.HasValue)
+                if (!ID.HasValue)
                 {
                     query = $@"
                 INSERT INTO userfollowjunction (id, followerid, followedid)
-	 	                VALUES (default, {UserID}, {entity.TargetID})
+	 	                VALUES (default, {UserID}, {TargetID})
                 ON CONFLICT (id, followerid, followedid) DO NOTHING 
                 RETURNING True;";
                 }
                 else
                 {
-                    query = $@"delete from userfollowjunction where followerid = {UserID} and followedid = {entity.TargetID} RETURNING False;";
+                    query = $@"delete from userfollowjunction where followerid = {UserID} and followedid = {TargetID} RETURNING False;";
                 }
 
                 using (var connection = GetConnection)
@@ -470,27 +484,55 @@ namespace dlog.server.Infrastructure.Data.Repo.User
             }
         }
 
-        public async Task<bool?> ManageBlock(UserFunctions entity, int UserID)
+        public async Task<bool?> ManageBlock(int TargetID, int UserID)
         {
             try
             {
+                var ID = await GetUserFunctionID(TargetID, UserID, false);
                 string query = "";
-                if (!entity.ID.HasValue)
+                if (!ID.HasValue)
                 {
                     query = $@"
                 INSERT INTO userblockjunction (id, blockerid, blockedid)
-	 	                VALUES (default, {UserID}, {entity.TargetID})
+	 	                VALUES (default, {UserID}, {TargetID})
                 ON CONFLICT (id, blockerid, blockedid) DO NOTHING 
                 RETURNING True;";
                 }
                 else
                 {
-                    query = $@"delete from userblockjunction where blockerid = {UserID} and blockedid = {entity.TargetID} RETURNING False;";
+                    query = $@"delete from userblockjunction where blockerid = {UserID} and blockedid = {TargetID} RETURNING False;";
                 }
 
                 using (var connection = GetConnection)
                 {
                     var res = await connection.QueryFirstOrDefaultAsync<bool>(query);
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+
+        public async Task<int?> GetUserFunctionID(int TargetID, int UserID, bool function)
+        {
+            try
+            {
+                string query = "";
+                if (function)
+                {
+                    query = $@"Select id from userfollowjunction ufj where ufj.followerid = {UserID} and ufj.followedid = {TargetID};";
+                }
+                else
+                {
+                    query = $@"Select id from userblockjunction ubj where ubj.blockerid = {UserID} and ubj.blockedid = {TargetID};";
+                }
+
+                using (var connection = GetConnection)
+                {
+                    var res = await connection.QueryFirstOrDefaultAsync<int?>(query);
                     return res;
                 }
             }

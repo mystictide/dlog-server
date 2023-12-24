@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrastructure.Managers.Users;
-using dlog_server.Infrastructure.Models.Helpers;
 
 namespace dlog.server.Controllers
 {
@@ -145,13 +144,13 @@ namespace dlog.server.Controllers
 
         [HttpPost]
         [Route("follow")]
-        public async Task<IActionResult> ManageFollow([FromBody] UserFunctions entity)
+        public async Task<IActionResult> ManageFollow([FromBody] int TargetID)
         {
             try
             {
                 if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
                 {
-                    var res = await new UserManager().ManageFollow(entity, AuthHelpers.CurrentUserID(HttpContext));
+                    var res = await new UserManager().ManageFollow(TargetID, AuthHelpers.CurrentUserID(HttpContext));
                     return Ok(res);
                 }
                 return StatusCode(401, "Authorization failed");
@@ -164,13 +163,13 @@ namespace dlog.server.Controllers
 
         [HttpPost]
         [Route("block")]
-        public async Task<IActionResult> ManageBlock([FromBody] UserFunctions entity)
+        public async Task<IActionResult> ManageBlock([FromBody] int TargetID)
         {
             try
             {
                 if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
                 {
-                    var res = await new UserManager().ManageBlock(entity, AuthHelpers.CurrentUserID(HttpContext));
+                    var res = await new UserManager().ManageBlock(TargetID, AuthHelpers.CurrentUserID(HttpContext));
                     return Ok(res);
                 }
                 return StatusCode(401, "Authorization failed");

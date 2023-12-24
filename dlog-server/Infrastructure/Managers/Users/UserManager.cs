@@ -6,7 +6,6 @@ using dlog_server.Infrastructure.Models.Users;
 using dlog.server.Infrastructure.Data.Repo.User;
 using dlog.server.Infrastructure.Models.Helpers;
 using dlog_server.Infrastructure.Models.Returns;
-using dlog_server.Infrastructure.Models.Helpers;
 using dlog.server.Infrastructure.Data.Interface.User;
 
 namespace dlog.server.Infrastructure.Managers.Users
@@ -31,7 +30,7 @@ namespace dlog.server.Infrastructure.Managers.Users
                     new Claim("id", user.ID.ToString()),
                     new Claim("authType", user.AuthType.ToString())
                 }),
-                    Expires = DateTime.UtcNow.AddDays(14),
+                    Expires = DateTime.UtcNow.AddDays(90),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
                 };
                 var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -165,14 +164,19 @@ namespace dlog.server.Infrastructure.Managers.Users
             return await _repo.UpdateSocials(ID, entity);
         }
 
-        public async Task<bool?> ManageFollow(UserFunctions entity, int UserID)
+        public async Task<bool?> ManageFollow(int TargetID, int UserID)
         {
-            return await _repo.ManageFollow(entity, UserID);
+            return await _repo.ManageFollow(TargetID, UserID);
         }
 
-        public async Task<bool?> ManageBlock(UserFunctions entity, int UserID)
+        public async Task<bool?> ManageBlock(int TargetID, int UserID)
         {
-            return await _repo.ManageBlock(entity, UserID);
+            return await _repo.ManageBlock(TargetID, UserID);
+        }
+
+        public async Task<int?> GetUserFunctionID(int TargetID, int UserID, bool function)
+        {
+            return await _repo.GetUserFunctionID(TargetID, UserID, function);
         }
     }
 }

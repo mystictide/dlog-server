@@ -13,7 +13,7 @@ namespace dlog.server.Infrasructure.Models.Returns
         {
             get
             {
-                return "https://dapi.herrguller.cc/static/avatars/user/" + UID + "/ua-small.jpg";
+                return Settings?.Picture?.Length > 0 ? "https://dapi.herrguller.cc/static/avatars/user/" + UID + "/ua-small.jpg" : null;
             }
         }
     }
