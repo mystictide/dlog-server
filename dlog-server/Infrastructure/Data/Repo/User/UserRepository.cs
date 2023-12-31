@@ -196,7 +196,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 left join users u on u.id = t.userid
                 left join categories c on c.id = t.categoryid
                 left join usersettings u2 on u2.userid = t.userid
-                WHERE t.userid = @UserID and ismedia = false
+                WHERE t.userid = @UserID and t.ismedia = false and t.isactive = true
                 order by COALESCE(t.updatedate, t.date) desc limit 6;";
 
                 string mediaQuery = $@"
@@ -205,7 +205,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 left join users u on u.id = t.userid
                 left join categories c on c.id = t.categoryid
                 left join usersettings u2 on u2.userid = t.userid
-                WHERE t.userid = @UserID and ismedia = true
+                WHERE t.userid = @UserID and t.ismedia = true and t.isactive = true
                 order by COALESCE(t.updatedate, t.date) desc limit 6;";
 
                 string followingQuery = $@"
@@ -218,7 +218,7 @@ namespace dlog.server.Infrastructure.Data.Repo.User
 
                 string statsQuery = $@"
                 select
-                (SELECT count(id) FROM posts p where p.userid = t.id) as PostsCount,
+                (SELECT count(id) FROM posts p where p.userid = t.id and p.isactive = true) as PostsCount,
                 (SELECT count(id) FROM userfollowjunction fn where fn.followerid = t.id) as FollowingCount,
                 (SELECT count(id) FROM userfollowjunction fw where fw.followedid = t.id) as FollowersCount,
                 (SELECT (case when exists (SELECT id FROM userfollowjunction isf where isf.followerid = {UserID ?? 0} and isf.followedid = t.id)

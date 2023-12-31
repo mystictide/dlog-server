@@ -234,7 +234,7 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 left join users u on u.id = t.userid
                 left join categories c on c.id = t.categoryid
                 left join usersettings u2 on u2.userid = t.userid
-                WHERE ismedia = {isMedia}
+                WHERE t.ismedia = {isMedia} and t.isactive = true
                 order by COALESCE(t.updatedate, t.date) desc limit {(isMedia ? 8 : 6)};";
 
                 using (var con = GetConnection)
@@ -303,8 +303,8 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
             {
                 string query = $@"
                 UPDATE posts
-                SET isactive = {entity.IsActive}
-                WHERE id = {entity.ID};
+                SET isactive = {entity.IsActive} 
+                WHERE id = {entity.ID} 
                 RETURNING isactive;";
 
                 using (var connection = GetConnection)

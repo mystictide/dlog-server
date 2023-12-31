@@ -18,8 +18,18 @@ namespace dlog_server.Controllers
         {
             try
             {
-                var result = await new BlogManager().ToggleVisibility(entity);
-                return Ok(result);
+                if (AuthHelpers.Authorize(HttpContext, AuthorizedAuthType))
+                {
+                    var post = await new BlogManager().Get(entity.ID, entity.Title);
+                    var UserID = AuthHelpers.CurrentUserID(HttpContext);
+                    if (UserID == post.UserID)
+                    {
+                        var result = await new BlogManager().ToggleVisibility(entity);
+                        return Ok(result);
+                    }
+                    return StatusCode(401, "Access denied");
+                }
+                return StatusCode(401, "Authorization failed");
             }
             catch (Exception ex)
             {

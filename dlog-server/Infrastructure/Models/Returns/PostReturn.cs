@@ -26,5 +26,6 @@ namespace dlog.server.Infrasructure.Models.Returns
         public DateTime Date { get; set; }
         public DateTime? UpdateDate { get; set; }
         public bool IsMedia { get; set; }
+        public bool IsActive { get; set; }
     }
 }
