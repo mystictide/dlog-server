@@ -80,7 +80,6 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return null;
             }
         }
-
         public async Task<Posts>? Get(int? ID, string? Title)
         {
             try
@@ -255,6 +254,36 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return null;
             }
         }
+        public async Task<IEnumerable<PostReturn>>? GetRandomPosts()
+        {
+            try
+            {
+                string query = $@"
+                SELECT t.*, u.id, u.username, c.*, u2.id, u2.picture
+                FROM posts t
+                left join users u on u.id = t.userid
+                left join categories c on c.id = t.categoryid
+                left join usersettings u2 on u2.userid = t.userid
+                WHERE t.ismedia = false and t.isactive = true ORDER BY random() limit 4;";
+
+                using (var con = GetConnection)
+                {
+                    var res = await con.QueryAsync<PostReturn, UserReturn, Categories, UserSettings, PostReturn>(query, (post, u, c, us) =>
+                    {
+                        post.Author = u.Username;
+                        post.Category = c.Name;
+                        post.AuthorSocials = us;
+                        return post;
+                    }, splitOn: "id");
+                    return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
         public async Task<PostStatistics>? GetPostStatistics(int ID)
         {
             try
@@ -359,7 +388,6 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return null;
             }
         }
-
         public async Task<Comments>? ManageComment(int UserID, Comments entity)
         {
             try
@@ -393,7 +421,6 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return null;
             }
         }
-
         public async Task<bool?> ManagePostVote(int UserID, int PostID, bool? vote)
         {
             try
@@ -430,7 +457,6 @@ namespace dlog_server.Infrastructure.Data.Repo.Blog
                 return null;
             }
         }
-
         public async Task<bool?> ManageCommentVote(int UserID, int CommentID, bool? vote)
         {
             try

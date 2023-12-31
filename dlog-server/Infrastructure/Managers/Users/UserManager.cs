@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using dlog_server.Infrastructure.Models.Users;
+using dlog.server.Infrasructure.Models.Returns;
 using dlog.server.Infrastructure.Data.Repo.User;
 using dlog.server.Infrastructure.Models.Helpers;
 using dlog_server.Infrastructure.Models.Returns;
@@ -177,6 +178,11 @@ namespace dlog.server.Infrastructure.Managers.Users
         public async Task<int?> GetUserFunctionID(int TargetID, int UserID, bool function)
         {
             return await _repo.GetUserFunctionID(TargetID, UserID, function);
+        }
+
+        public async Task<IEnumerable<UserReturn>>? GetRandomUsers()
+        {
+            return await _repo.GetRandomUsers();
         }
     }
 }

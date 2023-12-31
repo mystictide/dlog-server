@@ -209,11 +209,13 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 order by COALESCE(t.updatedate, t.date) desc limit 6;";
 
                 string followingQuery = $@"
-                SELECT t.id as uid, t.username FROM users t 
+                SELECT t.id as uid, t.username, us.* FROM users t 
+                left join usersettings us on us.userid = t.id 
                 WHERE t.id in (select followedid from userfollowjunction ufj where ufj.followerid = @UserID) limit 15;";
 
                 string followersQuery = $@"
-                SELECT t.id as uid, t.username FROM users t 
+                SELECT t.id as uid, t.username, us.*  FROM users t 
+                left join usersettings us on us.userid = t.id 
                 WHERE t.id in (select followerid from userfollowjunction ufj where ufj.followedid = @UserID) limit 15;";
 
                 string statsQuery = $@"
@@ -262,8 +264,17 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                         post.AuthorSocials = us;
                         return post;
                     }, param, splitOn: "id");
-                    result.Following = await con.QueryAsync<UserReturn>(followingQuery, param);
-                    result.Followers = await con.QueryAsync<UserReturn>(followersQuery, param);
+                    result.Following = await con.QueryAsync<UserReturn, UserSettings, UserReturn>(followingQuery, (user, us) =>
+                    {
+                        user.Settings = us;
+                        return user;
+                    }, param, splitOn: "id");
+
+                    result.Followers = await con.QueryAsync<UserReturn, UserSettings, UserReturn>(followersQuery, (user, us) =>
+                    {
+                        user.Settings = us;
+                        return user;
+                    }, param, splitOn: "id");
                     result.UserStatistics = await con.QueryFirstOrDefaultAsync<UserStatistics>(statsQuery, param);
 
                     return result;
@@ -534,6 +545,33 @@ namespace dlog.server.Infrastructure.Data.Repo.User
                 {
                     var res = await connection.QueryFirstOrDefaultAsync<int?>(query);
                     return res;
+                }
+            }
+            catch (Exception ex)
+            {
+                await new LogsRepository().CreateLog(ex);
+                return null;
+            }
+        }
+        public async Task<IEnumerable<UserReturn>>? GetRandomUsers()
+        {
+            try
+            {
+                string query = $@"
+                SELECT t.id as uid, t.username, us.* 
+                FROM users t 
+                left join usersettings us on us.userid = t.id 
+                WHERE t.isactive = true 
+                ORDER BY random() limit 4;";
+
+                using (var con = GetConnection)
+                {
+                    var result = await con.QueryAsync<UserReturn, UserSettings, UserReturn>(query, (user, us) =>
+                    {
+                        user.Settings = us;
+                        return user;
+                    }, splitOn: "id");
+                    return result;
                 }
             }
             catch (Exception ex)

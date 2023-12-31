@@ -1,7 +1,7 @@
 ﻿using dlog.server.Infrasructure.Models.Users;
 using dlog_server.Infrastructure.Models.Users;
+using dlog.server.Infrasructure.Models.Returns;
 using dlog_server.Infrastructure.Models.Returns;
-using dlog_server.Infrastructure.Models.Helpers;
 
 namespace dlog.server.Infrastructure.Data.Interface.User
 {
@@ -23,5 +23,6 @@ namespace dlog.server.Infrastructure.Data.Interface.User
         Task<bool?> ManageFollow(int TargetID, int UserID);
         Task<bool?> ManageBlock(int TargetID, int UserID);
         Task<int?> GetUserFunctionID(int TargetID, int UserID, bool function);
+        Task<IEnumerable<UserReturn>>? GetRandomUsers();
     }
 }

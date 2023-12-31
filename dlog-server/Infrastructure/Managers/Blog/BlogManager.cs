@@ -39,6 +39,11 @@ namespace dlog_server.Infrastructure.Managers.Blog
         public async Task<IEnumerable<PostReturn>>? GetRecentPosts(bool isMedia)
         {
             return await _repo.GetRecentPosts(isMedia);
+
+        }
+        public async Task<IEnumerable<PostReturn>>? GetRandomPosts()
+        {
+            return await _repo.GetRandomPosts();
         }
 
         public async Task<FilteredList<CommentReturn>> FilterComments(Filter filter, int? UserID)
@@ -49,8 +54,8 @@ namespace dlog_server.Infrastructure.Managers.Blog
         public async Task<PostStatistics>? GetPostStatistics(int ID)
         {
             return await _repo.GetPostStatistics(ID);
-        }       
-        
+        }
+
         public async Task<CommentStatistics>? GetCommentStatistics(int ID)
         {
             return await _repo.GetCommentStatistics(ID);

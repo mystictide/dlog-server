@@ -11,6 +11,7 @@ namespace dlog_server.Infrastructure.Data.Interface.Blog
         Task<Comments>? GetComment(int ID);
         Task<PostReturn>? GetView(int? ID, string? Title, int? UserID);
         Task<IEnumerable<PostReturn>>? GetRecentPosts(bool isMedia);
+        Task<IEnumerable<PostReturn>>? GetRandomPosts();
         Task<FilteredList<CommentReturn>>? FilterComments(Filter filter, int? UserID);
         Task<PostStatistics>? GetPostStatistics(int ID);
         Task<CommentStatistics>? GetCommentStatistics(int ID);

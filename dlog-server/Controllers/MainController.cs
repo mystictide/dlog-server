@@ -25,6 +25,36 @@ namespace dlog.server.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("random/post")]
+        public async Task<IActionResult> GetRandomPosts()
+        {
+            try
+            {
+                var result = await new BlogManager().GetRandomPosts();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(401, ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("random/users")]
+        public async Task<IActionResult> GetRandomUsers()
+        {
+            try
+            {
+                var result = await new UserManager().GetRandomUsers();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(401, ex.Message);
+            }
+        }
+
         [HttpPost]
         [Route("filter/posts")]
         public async Task<IActionResult> FilterPosts([FromBody] Filter filter)
